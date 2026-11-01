@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Same steps and order as `npm run ci` (scripts/lib/ci-gate.ts).
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: npm audit --omit=dev --audit-level=high
+
+  # Database tests, against a throwaway Postgres whose database ends in _test.
+  integration-and-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:18.6-alpine
+        env:
+          POSTGRES_USER: prisciane
+          POSTGRES_PASSWORD: prisciane_ci_only
+          POSTGRES_DB: prisciane_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U prisciane -d prisciane_test"
+          --health-interval 2s --health-timeout 3s --health-retries 30
+    env:
+      TEST_DATABASE_URL: postgres://prisciane:prisciane_ci_only@127.0.0.1:5432/prisciane_test
+      BETTER_AUTH_SECRET: ci-only-secret-ci-only-secret-ci-only
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run db:migrate -- --test
+      - run: npm run test:integration
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e

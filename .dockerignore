@@ -1,0 +1,15 @@
+node_modules
+.next
+.git
+.env
+.env.*
+!.env.example
+.claude
+test-results
+playwright-report
+coverage
+docs
+e2e
+playwright.config.ts
+.outbox
+.outbox-e2e

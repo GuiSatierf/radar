@@ -1,0 +1,55 @@
+# Coolify install ("Docker Compose" build pack, Git repository): the app and its own Postgres.
+# Every secret comes from Coolify's magic variables (SERVICE_*), generated once and kept between
+# deploys, so nobody types or pastes one. The guide is docs/COOLIFY.md.
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      # Tells Coolify to route the public address to port 3210 inside the container. Its value
+      # ends in ":3210", so the app takes SERVICE_URL_APP, the address the browser really opens.
+      SERVICE_URL_APP_3210: /
+      BETTER_AUTH_URL: ${SERVICE_URL_APP}
+      BETTER_AUTH_SECRET: ${SERVICE_BASE64_64_AUTH}
+      CRON_SECRET: ${SERVICE_PASSWORD_64_CRON}
+      DATABASE_URL: postgres://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_POSTGRES}@postgres:5432/${POSTGRES_DB:-prisciane}
+      APP_NAME: ${APP_NAME:-Prisciane}
+      # Traefik overwrites x-real-ip. Switch to cf-connecting-ip only when Cloudflare's proxy is on.
+      CLIENT_IP_HEADER: ${CLIENT_IP_HEADER:-x-real-ip}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      # Filled in the panel: the admin e-mail after that account exists, and the support link.
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      SUPPORT_URL: ${SUPPORT_URL}
+      # Optional until the Shopee affiliate key arrives; set both or neither.
+      SHOPEE_AFFILIATE_APP_ID: ${SHOPEE_AFFILIATE_APP_ID}
+      SHOPEE_AFFILIATE_SECRET: ${SHOPEE_AFFILIATE_SECRET}
+      # Real e-mail (Resend), off while empty; set both or neither. docs/COOLIFY.md, step 4.
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      EMAIL_FROM: ${EMAIL_FROM}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3210/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+  postgres:
+    image: postgres:18.6-alpine
+    environment:
+      POSTGRES_USER: ${SERVICE_USER_POSTGRES}
+      POSTGRES_PASSWORD: ${SERVICE_PASSWORD_POSTGRES}
+      POSTGRES_DB: ${POSTGRES_DB:-prisciane}
+    volumes:
+      - prisciane-postgres:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  prisciane-postgres:
