@@ -80,6 +80,22 @@ describe("confirmar o e-mail", () => {
     expect(await isConfirmed()).toBe(true);
   });
 
+  it("deve manter o plano que o admin deu antes de a pessoa confirmar", async () => {
+    await auth.api.signUpEmail({ body: MARIA });
+    await db
+      .update(user)
+      .set({ plan: "completo" })
+      .where(eq(user.email, MARIA.email));
+
+    await confirmEmail(auth, sender.sent, MARIA.email);
+
+    const [row] = await db
+      .select({ plan: user.plan })
+      .from(user)
+      .where(eq(user.email, MARIA.email));
+    expect(row?.plan).toBe("completo");
+  });
+
   it("deve recusar o link depois do prazo, sem confirmar", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     await auth.api.signUpEmail({ body: MARIA });

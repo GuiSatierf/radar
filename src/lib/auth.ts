@@ -5,7 +5,7 @@ import { nextCookies } from "better-auth/next-js";
 import { admin } from "better-auth/plugins/admin";
 import { type Database, getDatabase } from "@/db/client";
 import * as schema from "@/db/schema";
-import { syncAccountPlan } from "@/features/billing/access";
+import { applyWaitingPlan } from "@/features/billing/access";
 import { ADMIN_ROLE } from "@/features/plans/access";
 import { DEFAULT_PLAN } from "@/features/plans/plans";
 import { DEFAULT_COMMISSION_PROFILE } from "@/features/radar/domain/commission";
@@ -138,7 +138,7 @@ export function createAuth(
       autoSignInAfterVerification: true,
       expiresIn: VERIFICATION_LINK_HOURS * SECONDS_PER_HOUR,
       afterEmailVerification: async (verifiedUser) => {
-        await syncAccountPlan(
+        await applyWaitingPlan(
           db,
           verifiedUser.email.trim().toLowerCase(),
           new Date(),
