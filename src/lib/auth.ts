@@ -5,7 +5,7 @@ import { nextCookies } from "better-auth/next-js";
 import { admin } from "better-auth/plugins/admin";
 import { type Database, getDatabase } from "@/db/client";
 import * as schema from "@/db/schema";
-import { effectivePlan } from "@/features/billing/access";
+import { syncAccountPlan } from "@/features/billing/access";
 import { ADMIN_ROLE } from "@/features/plans/access";
 import { DEFAULT_PLAN } from "@/features/plans/plans";
 import { DEFAULT_COMMISSION_PROFILE } from "@/features/radar/domain/commission";
@@ -19,13 +19,22 @@ import { getServerEnv, type ServerEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { buildPasswordResetEmail } from "@/lib/password-reset-email";
-import type { EmailSender } from "@/sources/email/email-sender";
+import type { EmailMessage, EmailSender } from "@/sources/email/email-sender";
 import { selectEmailSender } from "@/sources/email/select-email-sender";
+import {
+  buildEmailVerificationEmail,
+  VERIFICATION_LINK_HOURS,
+} from "./email-verification-email";
 
 const SESSION_DAYS = 30;
 const SECONDS_PER_DAY = 60 * 60 * 24;
+const SECONDS_PER_HOUR = 60 * 60;
 const SIGN_UP_PATH = "/sign-up/email";
 const VERIFY_PASSWORD_PATH = "/verify-password";
+const SEND_VERIFICATION_PATH = "/send-verification-email";
+// "Reenviar e-mail" a few times is normal; more than that only fills someone's inbox.
+const VERIFICATION_EMAILS_PER_MINUTE = 3;
+const RATE_LIMIT_WINDOW_SECONDS = 60;
 
 type AuthEnv = Pick<
   ServerEnv,
@@ -46,39 +55,43 @@ const validateSignUp = createAuthMiddleware(async (ctx) => {
   });
 });
 
-interface ResetRequest {
+interface LinkRequest {
   user: { id: string; name: string; email: string };
   url: string;
 }
+
+type LinkEmailBuilder = (input: {
+  appName: string;
+  name: string;
+  to: string;
+  url: string;
+}) => EmailMessage;
 
 /**
  * The e-mail is not awaited on purpose: answering at the same speed whether the account exists
  * or not keeps the form from revealing who has an account. Failures go to the log.
  */
-function sendPasswordReset(
+function sendLinkEmail(
   emailSender: EmailSender | null,
   appName: string,
-): (data: ResetRequest) => Promise<void> {
+  purpose: string,
+  build: LinkEmailBuilder,
+): (data: LinkRequest) => Promise<void> {
   return async ({ user, url }) => {
     if (emailSender == null) {
       logger.warn(
-        { userId: user.id },
-        "password reset requested, but no e-mail sender is configured",
+        { userId: user.id, purpose },
+        "e-mail link requested, but no e-mail sender is configured",
       );
       return;
     }
 
-    const message = buildPasswordResetEmail({
-      appName,
-      name: user.name,
-      to: user.email,
-      url,
-    });
+    const message = build({ appName, name: user.name, to: user.email, url });
 
     void emailSender.send(message).catch((error: unknown) => {
       logger.error(
-        { err: error, userId: user.id, sender: emailSender.name },
-        "password reset e-mail failed",
+        { err: error, userId: user.id, purpose, sender: emailSender.name },
+        "e-mail link failed",
       );
     });
   };
@@ -103,9 +116,34 @@ export function createAuth(
         hash: hashPassword,
         verify: verifyPassword,
       },
-      sendResetPassword: sendPasswordReset(deps.emailSender, env.APP_NAME),
+      sendResetPassword: sendLinkEmail(
+        deps.emailSender,
+        env.APP_NAME,
+        "password-reset",
+        buildPasswordResetEmail,
+      ),
       // A new password logs out every other device, in case someone else had the old one.
       revokeSessionsOnPasswordReset: true,
+    },
+    // Anyone can type someone else's e-mail at sign-up, so a plan bought on Hotmart or given by an
+    // admin waits for the link: only the e-mail's owner can open it.
+    emailVerification: {
+      sendOnSignUp: true,
+      sendVerificationEmail: sendLinkEmail(
+        deps.emailSender,
+        env.APP_NAME,
+        "email-verification",
+        buildEmailVerificationEmail,
+      ),
+      autoSignInAfterVerification: true,
+      expiresIn: VERIFICATION_LINK_HOURS * SECONDS_PER_HOUR,
+      afterEmailVerification: async (verifiedUser) => {
+        await syncAccountPlan(
+          db,
+          verifiedUser.email.trim().toLowerCase(),
+          new Date(),
+        );
+      },
     },
     session: {
       expiresIn: SESSION_DAYS * SECONDS_PER_DAY,
@@ -132,16 +170,11 @@ export function createAuth(
     // limit instead of the strict sign-in one: any account could load the server through it.
     disabledPaths: [VERIFY_PASSWORD_PATH],
     hooks: { before: validateSignUp },
-    databaseHooks: {
-      user: {
-        create: {
-          // Bought on Hotmart before signing up: the account starts with that plan.
-          before: async (newUser) => {
-            const email = newUser.email.trim().toLowerCase();
-            const plan = await effectivePlan(db, email, new Date());
-
-            return { data: { ...newUser, plan } };
-          },
+    rateLimit: {
+      customRules: {
+        [SEND_VERIFICATION_PATH]: {
+          window: RATE_LIMIT_WINDOW_SECONDS,
+          max: VERIFICATION_EMAILS_PER_MINUTE,
         },
       },
     },

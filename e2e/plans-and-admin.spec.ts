@@ -1,6 +1,7 @@
 import { expect, type Page, test } from "@playwright/test";
 import { eq } from "drizzle-orm";
 import { hotmartAccess, hotmartEvent, product, user } from "../src/db/schema";
+import { confirmationLinkFor } from "./outbox";
 import {
   assignFreshClientIp,
   makeAdmin,
@@ -191,8 +192,12 @@ test("o admin vê de onde veio o plano e os avisos da Hotmart", async ({
     });
   });
   const buyer = await openAsNewVisitor(browser);
-  // Bought before signing up: the account starts with the Hotmart plan.
+  // Bought before signing up: the Hotmart plan arrives once she confirms the e-mail.
   await signUp(buyer, buyerEmail);
+  await buyer.goto(await confirmationLinkFor(buyerEmail));
+  await expect(buyer).toHaveURL(/email=confirmado/, {
+    timeout: NAVIGATION_TIMEOUT,
+  });
   await buyer.context().close();
 
   const adminEmail = uniqueEmail(`${testInfo.title}-admin`);

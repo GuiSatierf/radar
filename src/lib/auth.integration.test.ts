@@ -128,6 +128,7 @@ describe("seedDemoAccount", () => {
 
     expect([first, second]).toEqual(["created", "already-exists"]);
     expect(users).toHaveLength(1);
+    expect(users[0]?.emailVerified).toBe(true);
   });
 });
 

@@ -3,6 +3,7 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { createDatabase } from "@/db/client";
 import { hotmartAccess, hotmartEvent, user } from "@/db/schema";
 import { createAuth } from "@/lib/auth";
+import { capturingSender, confirmEmail } from "@/lib/auth.fixtures";
 import { applyEndedAccess } from "../access";
 import {
   cancellationEvent,
@@ -16,12 +17,17 @@ import { hashHottok } from "./settings";
 import { HOTTOK_HEADER, handleHotmartWebhook } from "./webhook";
 
 const { db, pool } = createDatabase(process.env.TEST_DATABASE_URL ?? "");
-const auth = createAuth(db, {
-  APP_NAME: "Teste",
-  BETTER_AUTH_SECRET: "integration-test-secret-integration-test",
-  BETTER_AUTH_URL: "http://localhost:3210",
-  CLIENT_IP_HEADER: "x-real-ip",
-});
+const sender = capturingSender();
+const auth = createAuth(
+  db,
+  {
+    APP_NAME: "Teste",
+    BETTER_AUTH_SECRET: "integration-test-secret-integration-test",
+    BETTER_AUTH_URL: "http://localhost:3210",
+    CLIENT_IP_HEADER: "x-real-ip",
+  },
+  { emailSender: sender },
+);
 const HOTTOK = "hottok-de-teste-123";
 const MAPPING = buildHotmartPlanMapping(TEST_PLAN_ROWS);
 const EMAIL = "maria@teste.test";
@@ -51,10 +57,16 @@ async function send(
   });
 }
 
-async function signUp(email = EMAIL): Promise<void> {
+async function signUpWithoutConfirming(email = EMAIL): Promise<void> {
   await auth.api.signUpEmail({
     body: { name: "Maria Souza", email, password: "senha-forte-123" },
   });
+}
+
+/** An account whose owner already opened the confirmation link. */
+async function signUp(email = EMAIL): Promise<void> {
+  await signUpWithoutConfirming(email);
+  await confirmEmail(auth, sender.sent, email);
 }
 
 /** The real database, except that the second account-plan write inside a transaction fails. */
@@ -126,7 +138,26 @@ describe("webhook da Hotmart", () => {
     expect(await planOf(EMAIL)).toBe("radar");
   });
 
-  it("deve dar o plano no cadastro para quem comprou antes de criar a conta", async () => {
+  it("deve dar o plano ao confirmar o e-mail para quem comprou antes de criar a conta", async () => {
+    await send(
+      purchaseEvent({
+        id: "e1",
+        event: "PURCHASE_APPROVED",
+        email: EMAIL,
+        at: T0,
+      }),
+    );
+    await signUpWithoutConfirming();
+    expect(await planOf(EMAIL)).toBe("none");
+
+    await confirmEmail(auth, sender.sent, EMAIL);
+
+    expect(await planOf(EMAIL)).toBe("radar");
+  });
+
+  it("não deve dar a compra de outra pessoa a quem só criou a conta com o e-mail dela", async () => {
+    await signUpWithoutConfirming();
+
     await send(
       purchaseEvent({
         id: "e1",
@@ -136,9 +167,7 @@ describe("webhook da Hotmart", () => {
       }),
     );
 
-    await signUp();
-
-    expect(await planOf(EMAIL)).toBe("radar");
+    expect(await planOf(EMAIL)).toBe("none");
   });
 
   it("deve tirar o plano na hora com reembolso", async () => {

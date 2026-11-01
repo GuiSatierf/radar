@@ -49,8 +49,8 @@ export default async function AdminAccessPage(): Promise<ReactElement> {
         <div>
           <h2 className="text-lg font-semibold">Liberar acesso por e-mail</h2>
           <p className="text-sm text-muted-foreground">
-            Quem já tem conta ganha o plano na hora. Quem ainda não tem ganha ao
-            criar a conta com esse e-mail.
+            Quem já tem conta e confirmou o e-mail ganha o plano na hora. Os
+            outros ganham assim que confirmarem o e-mail pelo link que mandamos.
           </p>
         </div>
         <GrantAccessForm />

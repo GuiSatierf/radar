@@ -12,8 +12,9 @@ import {
 } from "./plan-mapping";
 
 /**
- * Off until sign-up confirms the e-mail (security review, lead 1): otherwise anyone who signs up
- * with a buyer's e-mail gets the plan. Until then events are only recorded, never applied.
+ * Off until the owner decides to sell through Hotmart: until then events are only recorded, never
+ * applied. What kept it off (security review, lead 1) is solved: plans only reach accounts whose
+ * owner confirmed the e-mail (syncAccountPlan).
  */
 export const HOTMART_UNLOCKS_PLANS = false;
 

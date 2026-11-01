@@ -1,7 +1,11 @@
-import type { ReactElement } from "react";
+import { type ReactElement, Suspense } from "react";
 import { AppHeader } from "@/components/app-shell/app-header";
 import { BottomNav } from "@/components/app-shell/bottom-nav";
 import { Sidebar } from "@/components/app-shell/sidebar";
+import {
+  EmailConfirmationNotice,
+  EmailConfirmationResult,
+} from "@/components/auth/email-confirmation-notice";
 import { listLockedTools } from "@/features/plans/access";
 import { getAppName } from "@/lib/env";
 import { getInitials } from "@/lib/initials";
@@ -26,6 +30,12 @@ export default async function AppLayout({
 
       <main className="flex min-w-0 flex-1 flex-col gap-6 rounded-2xl bg-card p-4 pb-28 sm:p-6 lg:pb-6">
         <AppHeader userName={user.name} isAdmin={user.isAdmin} />
+        {user.isEmailConfirmed === false && (
+          <EmailConfirmationNotice email={user.email} />
+        )}
+        <Suspense fallback={null}>
+          <EmailConfirmationResult />
+        </Suspense>
         {children}
       </main>
 

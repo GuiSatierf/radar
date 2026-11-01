@@ -102,7 +102,11 @@ export async function listRunningAccess(
   return best;
 }
 
-/** Writes the e-mail's plan on its account, if one exists (otherwise sign-up picks it up). */
+/**
+ * Writes the e-mail's plan on its account, if one exists and its owner confirmed the e-mail
+ * (confirming runs this again). Without the confirmation, anyone who signed up with a buyer's
+ * e-mail would get the buyer's plan.
+ */
 export async function syncAccountPlan(
   db: Executor,
   email: string,
@@ -113,7 +117,9 @@ export async function syncAccountPlan(
   await db
     .update(user)
     .set({ plan })
-    .where(eq(sql`lower(${user.email})`, email));
+    .where(
+      and(eq(sql`lower(${user.email})`, email), eq(user.emailVerified, true)),
+    );
 }
 
 /** Records one grant or end. An event older than the last one applied to that purchase is dropped. */

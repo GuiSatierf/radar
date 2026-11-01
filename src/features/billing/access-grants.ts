@@ -12,8 +12,8 @@ export interface AccessGrantRow {
 }
 
 /**
- * Unlocks the plan for each e-mail (already lowercase). Accounts that exist change now; the others
- * get it at sign-up. Granting an e-mail again changes its plan.
+ * Unlocks the plan for each e-mail (already lowercase). Accounts with a confirmed e-mail change now;
+ * the others get it when their owner confirms the e-mail. Granting an e-mail again changes its plan.
  */
 export async function grantAccess(
   db: Database,

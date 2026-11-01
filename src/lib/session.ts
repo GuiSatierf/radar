@@ -22,6 +22,7 @@ export interface CurrentUser {
   readonly id: string;
   readonly name: string;
   readonly email: string;
+  readonly isEmailConfirmed: boolean;
   readonly commissionProfile: CommissionProfile;
   readonly plan: PlanId;
   readonly isAdmin: boolean;
@@ -36,12 +37,14 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
 
   if (session == null) return null;
 
-  const { id, name, email, commissionProfile, plan, role } = session.user;
+  const { id, name, email, emailVerified, commissionProfile, plan, role } =
+    session.user;
 
   return {
     id,
     name,
     email,
+    isEmailConfirmed: emailVerified,
     commissionProfile: isCommissionProfile(commissionProfile)
       ? commissionProfile
       : DEFAULT_COMMISSION_PROFILE,

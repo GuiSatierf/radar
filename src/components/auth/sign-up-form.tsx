@@ -6,13 +6,15 @@ import { Button } from "@/components/ui/button";
 import { PRIVACY_PATH, TERMS_PATH } from "@/features/legal/legal-info";
 import { authClient } from "@/lib/auth-client";
 import { PASSWORD_MIN_LENGTH, signUpSchema } from "@/lib/auth-forms";
+import { EMAIL_CONFIRMED_PATH } from "./email-confirmation-notice";
 import { FormField } from "./form-field";
 import { useAuthForm } from "./use-auth-form";
 
 export function SignUpForm(): ReactElement {
   const form = useAuthForm({
     schema: signUpSchema,
-    submit: (data) => authClient.signUp.email(data),
+    submit: (data) =>
+      authClient.signUp.email({ ...data, callbackURL: EMAIL_CONFIRMED_PATH }),
   });
 
   return (
