@@ -12,7 +12,7 @@ import { getAuthErrorMessage } from "@/lib/auth-forms";
 const CONFIRMED_PARAM = "email";
 const CONFIRMED_VALUE = "confirmado";
 
-/** Where the link in the e-mail lands; Better Auth adds `error=...` when the link failed. */
+/** Where the link in the e-mail lands; Better Auth keeps it and adds `error=...` when the link failed. */
 export const EMAIL_CONFIRMED_PATH = `${HOME_PATH}?${CONFIRMED_PARAM}=${CONFIRMED_VALUE}`;
 
 /** Shown on every app page until the account's e-mail is confirmed. */
@@ -67,13 +67,15 @@ export function EmailConfirmationNotice(props: {
 }
 
 /**
- * The answer after the link in the e-mail: confirmed, or a link that no longer works. Each one
- * shows only when the account agrees: an old link opened after confirming is not a problem.
+ * The answer after the link in the e-mail: confirmed, or a link that no longer works. It shows only
+ * on the link's way back, and follows the account: an old link opened after confirming is fine.
  */
 export function EmailConfirmationResult(props: {
   isEmailConfirmed: boolean;
 }): ReactElement | null {
   const searchParams = useSearchParams();
+
+  if (searchParams.get(CONFIRMED_PARAM) !== CONFIRMED_VALUE) return null;
 
   if (props.isEmailConfirmed === false) {
     if (searchParams.get("error") == null) return null;
@@ -88,8 +90,6 @@ export function EmailConfirmationResult(props: {
       </p>
     );
   }
-
-  if (searchParams.get(CONFIRMED_PARAM) !== CONFIRMED_VALUE) return null;
 
   return (
     <p

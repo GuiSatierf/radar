@@ -44,3 +44,18 @@ test("o link que não vale mais avisa e o aviso para pedir outro continua", asyn
   ).toBeVisible({ timeout: NAVIGATION_TIMEOUT });
   await expect(page.getByRole("region", NOTICE)).toBeVisible();
 });
+
+test("um erro no endereço que não veio do link do e-mail não mostra aviso de link", async ({
+  page,
+}, testInfo) => {
+  await signUp(page, uniqueEmail(testInfo.title));
+
+  await page.goto("/radar?error=TOKEN_EXPIRED");
+
+  await expect(page.getByRole("region", NOTICE)).toBeVisible();
+  await expect(
+    page
+      .getByRole("alert")
+      .filter({ hasText: "Esse link venceu ou não vale mais" }),
+  ).toHaveCount(0);
+});
