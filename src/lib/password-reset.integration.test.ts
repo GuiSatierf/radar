@@ -43,9 +43,10 @@ function tokenFrom(message: EmailMessage | undefined): string {
 
 beforeEach(async () => {
   await db.execute(sql`truncate table "user" cascade`);
+  // Signed up before the capture starts: the sign-up's confirmation e-mail is not under test here.
+  await createAuth(db, ENV).api.signUpEmail({ body: MARIA });
   sender = capturingSender();
   auth = createAuth(db, ENV, { emailSender: sender });
-  await auth.api.signUpEmail({ body: MARIA });
 });
 
 afterAll(async () => {
