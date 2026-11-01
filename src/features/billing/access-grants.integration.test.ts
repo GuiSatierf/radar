@@ -73,6 +73,20 @@ describe("acesso liberado por e-mail", () => {
     expect(await planOf(EMAIL)).toBe("none");
   });
 
+  it("deve tirar o plano ao remover a liberação, mesmo de quem não confirmou o e-mail", async () => {
+    // Accounts from before the confirmation existed got the plan without confirming.
+    await signUpWithoutConfirming();
+    await grantAccess(db, { emails: [EMAIL], plan: "completo" }, NOW);
+    await db
+      .update(user)
+      .set({ plan: "completo" })
+      .where(eq(user.email, EMAIL));
+
+    await revokeAccess(db, EMAIL, NOW);
+
+    expect(await planOf(EMAIL)).toBe("none");
+  });
+
   it("deve mudar na hora o plano de quem já tem conta", async () => {
     await signUp();
 

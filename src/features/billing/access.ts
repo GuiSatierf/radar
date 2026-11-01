@@ -103,9 +103,10 @@ export async function listRunningAccess(
 }
 
 /**
- * Writes the e-mail's plan on its account, if one exists and its owner confirmed the e-mail
- * (confirming applies it with applyWaitingPlan). Without the confirmation, anyone who signed up with a buyer's
- * e-mail would get the buyer's plan.
+ * Writes the e-mail's plan on its account, if one exists. An unconfirmed account only goes down:
+ * otherwise anyone who signed up with a buyer's e-mail would get the buyer's plan, while a revoked
+ * plan must still leave accounts from before the confirmation existed. Confirming applies the rest
+ * (applyWaitingPlan).
  */
 export async function syncAccountPlan(
   db: Executor,
@@ -113,12 +114,16 @@ export async function syncAccountPlan(
   now: Date,
 ): Promise<void> {
   const plan = await effectivePlan(db, email, now);
+  const higherPlans = PLAN_IDS.filter((id) => rank(id) > rank(plan));
 
   await db
     .update(user)
     .set({ plan })
     .where(
-      and(eq(sql`lower(${user.email})`, email), eq(user.emailVerified, true)),
+      and(
+        eq(sql`lower(${user.email})`, email),
+        or(eq(user.emailVerified, true), inArray(user.plan, higherPlans)),
+      ),
     );
 }
 
