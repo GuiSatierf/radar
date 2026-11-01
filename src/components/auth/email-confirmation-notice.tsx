@@ -66,11 +66,18 @@ export function EmailConfirmationNotice(props: {
   );
 }
 
-/** The answer after the link in the e-mail: confirmed, or a link that no longer works. */
-export function EmailConfirmationResult(): ReactElement | null {
+/**
+ * The answer after the link in the e-mail: confirmed, or a link that no longer works. Each one
+ * shows only when the account agrees: an old link opened after confirming is not a problem.
+ */
+export function EmailConfirmationResult(props: {
+  isEmailConfirmed: boolean;
+}): ReactElement | null {
   const searchParams = useSearchParams();
 
-  if (searchParams.get("error") != null) {
+  if (props.isEmailConfirmed === false) {
+    if (searchParams.get("error") == null) return null;
+
     return (
       <p
         role="alert"

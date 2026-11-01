@@ -34,7 +34,7 @@ export default async function AppLayout({
           <EmailConfirmationNotice email={user.email} />
         )}
         <Suspense fallback={null}>
-          <EmailConfirmationResult />
+          <EmailConfirmationResult isEmailConfirmed={user.isEmailConfirmed} />
         </Suspense>
         {children}
       </main>
