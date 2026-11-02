@@ -9,11 +9,14 @@ import {
   vi,
 } from "vitest";
 import { createDatabase } from "@/db/client";
-import { user } from "@/db/schema";
-import { createAuth } from "./auth";
+import { accessGrant, user } from "@/db/schema";
+import { grantAccess } from "@/features/billing/access-grants";
+import { createAuth, SIGN_IN_TO_CONFIRM_PATH } from "./auth";
 import {
   capturingSender,
   confirmEmail,
+  openConfirmationLink,
+  signInCookie,
   verificationTokenFor,
 } from "./auth.fixtures";
 import { VERIFICATION_LINK_HOURS } from "./email-verification-email";
@@ -32,9 +35,34 @@ const MARIA = {
   callbackURL: "/radar?email=confirmado",
 };
 const MS_PER_HOUR = 60 * 60 * 1000;
+const FOUND = 302;
 
 let sender = capturingSender();
 let auth = createAuth(db, ENV, { emailSender: sender });
+
+async function planOfMaria(): Promise<string | undefined> {
+  const [row] = await db
+    .select({ plan: user.plan })
+    .from(user)
+    .where(eq(user.email, MARIA.email));
+
+  return row?.plan;
+}
+
+/** Asks for a new password and sets it through the link in the e-mail. */
+async function resetPassword(newPassword: string): Promise<void> {
+  await auth.api.requestPasswordReset({
+    body: { email: MARIA.email, redirectTo: "/nova-senha" },
+  });
+  const message = sender.sent.findLast(
+    (candidate) => candidate.to === MARIA.email,
+  );
+  const token = /\/reset-password\/([^?\s]+)/.exec(message?.text ?? "")?.[1];
+
+  if (token == null) throw new Error("no reset link in the e-mail");
+
+  await auth.api.resetPassword({ body: { newPassword, token } });
+}
 
 async function isConfirmed(): Promise<boolean | undefined> {
   const [row] = await db
@@ -46,7 +74,7 @@ async function isConfirmed(): Promise<boolean | undefined> {
 }
 
 beforeEach(async () => {
-  await db.execute(sql`truncate table "user" cascade`);
+  await db.execute(sql`truncate table "user", ${accessGrant} cascade`);
   sender = capturingSender();
   auth = createAuth(db, ENV, { emailSender: sender });
 });
@@ -72,12 +100,88 @@ describe("confirmar o e-mail", () => {
     expect(await isConfirmed()).toBe(false);
   });
 
-  it("deve confirmar o e-mail quando a pessoa abre o link", async () => {
+  it("deve confirmar o e-mail quando a pessoa abre o link já dentro da conta", async () => {
     await auth.api.signUpEmail({ body: MARIA });
 
-    await confirmEmail(auth, sender.sent, MARIA.email);
+    await confirmEmail(auth, sender.sent, MARIA.email, MARIA.password);
 
     expect(await isConfirmed()).toBe(true);
+  });
+
+  it("deve mandar para a tela de entrar, sem confirmar, quem abre o link fora da conta", async () => {
+    await auth.api.signUpEmail({ body: MARIA });
+
+    const response = await openConfirmationLink(
+      auth,
+      sender.sent,
+      MARIA.email,
+      null,
+    );
+
+    expect(response.status).toBe(FOUND);
+    expect(response.headers.get("location")).toBe(SIGN_IN_TO_CONFIRM_PATH);
+    expect(await isConfirmed()).toBe(false);
+  });
+
+  it("não deve confirmar quando o link é aberto dentro de outra conta", async () => {
+    await auth.api.signUpEmail({ body: MARIA });
+    const other = { ...MARIA, email: "outra@teste.test" };
+    await auth.api.signUpEmail({ body: other });
+    const otherCookie = await signInCookie(auth, other.email, other.password);
+
+    const response = await openConfirmationLink(
+      auth,
+      sender.sent,
+      MARIA.email,
+      otherCookie,
+    );
+
+    expect(response.headers.get("location")).toBe(SIGN_IN_TO_CONFIRM_PATH);
+    expect(await isConfirmed()).toBe(false);
+  });
+
+  it("deve confirmar o e-mail e liberar o plano quando a pessoa cria uma senha nova pelo e-mail", async () => {
+    await auth.api.signUpEmail({ body: MARIA });
+    await grantAccess(
+      db,
+      { emails: [MARIA.email], plan: "completo" },
+      new Date(),
+    );
+
+    await resetPassword("senha-nova-456");
+
+    expect(await isConfirmed()).toBe(true);
+    expect(await planOfMaria()).toBe("completo");
+  });
+
+  it("não deve deixar quem criou a conta com o e-mail de outra pessoa ficar com o plano dela", async () => {
+    // Someone else signs up first with Maria's e-mail and keeps the session and the password.
+    await auth.api.signUpEmail({ body: MARIA });
+    const intruderCookie = await signInCookie(
+      auth,
+      MARIA.email,
+      MARIA.password,
+    );
+    await grantAccess(
+      db,
+      { emails: [MARIA.email], plan: "completo" },
+      new Date(),
+    );
+
+    await openConfirmationLink(auth, sender.sent, MARIA.email, null);
+    expect(await planOfMaria()).toBe("none");
+    await resetPassword("senha-da-maria-456");
+
+    expect(await planOfMaria()).toBe("completo");
+    const intruderSession = await auth.api.getSession({
+      headers: new Headers({ cookie: intruderCookie }),
+    });
+    expect(intruderSession).toBeNull();
+    await expect(
+      auth.api.signInEmail({
+        body: { email: MARIA.email, password: MARIA.password },
+      }),
+    ).rejects.toMatchObject({ status: "UNAUTHORIZED" });
   });
 
   it("deve manter o plano que o admin deu antes de a pessoa confirmar", async () => {
@@ -87,7 +191,7 @@ describe("confirmar o e-mail", () => {
       .set({ plan: "completo" })
       .where(eq(user.email, MARIA.email));
 
-    await confirmEmail(auth, sender.sent, MARIA.email);
+    await confirmEmail(auth, sender.sent, MARIA.email, MARIA.password);
 
     const [row] = await db
       .select({ plan: user.plan })

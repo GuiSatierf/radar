@@ -17,5 +17,6 @@ describe("buildEmailVerificationEmail", () => {
       "https://app.test/api/auth/verify-email?token=abc",
     );
     expect(message.text).toContain("vale por 24 horas");
+    expect(message.text).toContain("no aparelho em que você entrou na conta");
   });
 });

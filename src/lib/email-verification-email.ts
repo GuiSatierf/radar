@@ -20,6 +20,7 @@ export function buildEmailVerificationEmail(input: {
       `Para confirmar que este e-mail é seu no ${input.appName}, abra este link:`,
       input.url,
       "",
+      "Abra o link no aparelho em que você entrou na conta.",
       "Se você comprou ou ganhou um plano, ele é liberado assim que você confirmar.",
       `O link vale por ${VERIFICATION_LINK_HOURS} horas.`,
       "Se não foi você que criou a conta, pode ignorar este e-mail.",

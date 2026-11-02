@@ -22,17 +22,18 @@ const auth = createAuth(
 const EMAIL = "aluna@teste.test";
 const OTHER_EMAIL = "outra@teste.test";
 const NOW = new Date("2026-10-27T12:00:00Z");
+const PASSWORD = "senha-forte-123";
 
 async function signUpWithoutConfirming(email = EMAIL): Promise<void> {
   await auth.api.signUpEmail({
-    body: { name: "Aluna Teste", email, password: "senha-forte-123" },
+    body: { name: "Aluna Teste", email, password: PASSWORD },
   });
 }
 
 /** An account whose owner already opened the confirmation link. */
 async function signUp(email = EMAIL): Promise<void> {
   await signUpWithoutConfirming(email);
-  await confirmEmail(auth, sender.sent, email.toLowerCase());
+  await confirmEmail(auth, sender.sent, email.toLowerCase(), PASSWORD);
 }
 
 async function planOf(email: string): Promise<string | undefined> {
@@ -60,7 +61,7 @@ describe("acesso liberado por e-mail", () => {
     await signUpWithoutConfirming();
     expect(await planOf(EMAIL)).toBe("none");
 
-    await confirmEmail(auth, sender.sent, EMAIL);
+    await confirmEmail(auth, sender.sent, EMAIL, PASSWORD);
 
     expect(await planOf(EMAIL)).toBe("completo");
   });

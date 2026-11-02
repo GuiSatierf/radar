@@ -3,6 +3,8 @@ import { confirmationLinkFor } from "./outbox";
 import {
   assignFreshClientIp,
   NAVIGATION_TIMEOUT,
+  openAsNewVisitor,
+  PASSWORD,
   signUp,
   uniqueEmail,
 } from "./support";
@@ -58,4 +60,33 @@ test("um erro no endereço que não veio do link do e-mail não mostra aviso de 
       .getByRole("alert")
       .filter({ hasText: "Esse link venceu ou não vale mais" }),
   ).toHaveCount(0);
+});
+
+test("o link aberto fora da conta pede para entrar e só confirma depois", async ({
+  page,
+  browser,
+}, testInfo) => {
+  const email = uniqueEmail(testInfo.title);
+  await signUp(page, email);
+  const link = await confirmationLinkFor(email);
+  const otherDevice = await openAsNewVisitor(browser);
+
+  await otherDevice.goto(link);
+
+  await expect(
+    otherDevice
+      .getByRole("status")
+      .filter({ hasText: "entre na sua conta neste aparelho" }),
+  ).toBeVisible({ timeout: NAVIGATION_TIMEOUT });
+  await otherDevice.getByLabel("E-mail").fill(email);
+  await otherDevice.getByLabel("Senha").fill(PASSWORD);
+  await otherDevice.getByRole("button", { name: "Entrar" }).click();
+  await expect(otherDevice.getByRole("region", NOTICE)).toBeVisible({
+    timeout: NAVIGATION_TIMEOUT,
+  });
+  await otherDevice.goto(link);
+  await expect(
+    otherDevice.getByRole("status").filter({ hasText: "E-mail confirmado" }),
+  ).toBeVisible({ timeout: NAVIGATION_TIMEOUT });
+  await expect(otherDevice.getByRole("region", NOTICE)).toHaveCount(0);
 });

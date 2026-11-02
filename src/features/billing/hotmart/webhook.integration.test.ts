@@ -31,6 +31,7 @@ const auth = createAuth(
 const HOTTOK = "hottok-de-teste-123";
 const MAPPING = buildHotmartPlanMapping(TEST_PLAN_ROWS);
 const EMAIL = "maria@teste.test";
+const PASSWORD = "senha-forte-123";
 const DAY_MS = 24 * 60 * 60 * 1000;
 const T0 = Date.UTC(2026, 9, 23, 12);
 
@@ -59,14 +60,14 @@ async function send(
 
 async function signUpWithoutConfirming(email = EMAIL): Promise<void> {
   await auth.api.signUpEmail({
-    body: { name: "Maria Souza", email, password: "senha-forte-123" },
+    body: { name: "Maria Souza", email, password: PASSWORD },
   });
 }
 
 /** An account whose owner already opened the confirmation link. */
 async function signUp(email = EMAIL): Promise<void> {
   await signUpWithoutConfirming(email);
-  await confirmEmail(auth, sender.sent, email);
+  await confirmEmail(auth, sender.sent, email, PASSWORD);
 }
 
 /** The real database, except that the second account-plan write inside a transaction fails. */
@@ -150,7 +151,7 @@ describe("webhook da Hotmart", () => {
     await signUpWithoutConfirming();
     expect(await planOf(EMAIL)).toBe("none");
 
-    await confirmEmail(auth, sender.sent, EMAIL);
+    await confirmEmail(auth, sender.sent, EMAIL, PASSWORD);
 
     expect(await planOf(EMAIL)).toBe("radar");
   });
