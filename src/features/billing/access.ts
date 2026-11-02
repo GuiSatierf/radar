@@ -102,18 +102,56 @@ export async function listRunningAccess(
   return best;
 }
 
-/** Writes the e-mail's plan on its account, if one exists (otherwise sign-up picks it up). */
+/**
+ * Writes the e-mail's plan on its account, if one exists. An unconfirmed account only goes down:
+ * otherwise anyone who signed up with a buyer's e-mail would get the buyer's plan, while a revoked
+ * plan must still leave accounts from before the confirmation existed. Confirming applies the rest
+ * (applyWaitingPlan).
+ */
 export async function syncAccountPlan(
   db: Executor,
   email: string,
   now: Date,
 ): Promise<void> {
   const plan = await effectivePlan(db, email, now);
+  const higherPlans = PLAN_IDS.filter((id) => rank(id) > rank(plan));
 
   await db
     .update(user)
     .set({ plan })
-    .where(eq(sql`lower(${user.email})`, email));
+    .where(
+      and(
+        eq(sql`lower(${user.email})`, email),
+        or(eq(user.emailVerified, true), inArray(user.plan, higherPlans)),
+      ),
+    );
+}
+
+/**
+ * Gives a just-confirmed account the plan that was waiting for its e-mail. It only raises the
+ * plan: one an admin set by hand while the e-mail was unconfirmed stays unless a better one waits.
+ */
+export async function applyWaitingPlan(
+  db: Executor,
+  email: string,
+  now: Date,
+): Promise<void> {
+  const waiting = await effectivePlan(db, email, now);
+
+  if (waiting === DEFAULT_PLAN) return;
+
+  const lowerPlans = PLAN_IDS.filter((id) => rank(id) < rank(waiting));
+
+  await db
+    .update(user)
+    .set({ plan: waiting })
+    .where(
+      and(
+        eq(sql`lower(${user.email})`, email),
+        eq(user.emailVerified, true),
+        inArray(user.plan, lowerPlans),
+      ),
+    );
 }
 
 /** Records one grant or end. An event older than the last one applied to that purchase is dropped. */

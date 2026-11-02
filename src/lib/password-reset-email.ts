@@ -3,6 +3,13 @@ import type { EmailMessage } from "@/sources/email/email-sender";
 /** Better Auth's default; the e-mail says it in words. */
 export const RESET_LINK_HOURS = 1;
 
+/** "Olá, Maria!" from "Maria Souza", or a plain "Olá!" without a name. */
+export function greetByFirstName(name: string): string {
+  const firstName = name.trim().split(/\s+/)[0] ?? "";
+
+  return firstName.length > 0 ? `Olá, ${firstName}!` : "Olá!";
+}
+
 /** The "esqueci minha senha" e-mail, in plain text and plain words. */
 export function buildPasswordResetEmail(input: {
   appName: string;
@@ -10,14 +17,11 @@ export function buildPasswordResetEmail(input: {
   to: string;
   url: string;
 }): EmailMessage {
-  const firstName = input.name.trim().split(/\s+/)[0] ?? "";
-  const greeting = firstName.length > 0 ? `Olá, ${firstName}!` : "Olá!";
-
   return {
     to: input.to,
     subject: `Crie uma senha nova no ${input.appName}`,
     text: [
-      greeting,
+      greetByFirstName(input.name),
       "",
       `Para criar uma senha nova no ${input.appName}, abra este link:`,
       input.url,

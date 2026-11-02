@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { confirmationLinkFor } from "./outbox";
 import {
   assignFreshClientIp,
   makeAdmin,
@@ -12,7 +13,7 @@ test.beforeEach(async ({ page }) => {
   await assignFreshClientIp(page);
 });
 
-test("o admin libera e-mails, quem cria a conta depois já entra com o plano, e o acesso sai", async ({
+test("o admin libera e-mails, quem cria a conta ganha o plano ao confirmar o e-mail, e o acesso sai", async ({
   page,
   browser,
 }, testInfo) => {
@@ -45,8 +46,14 @@ test("o admin libera e-mails, quem cria a conta depois já entra com o plano, e 
   await signUp(student, studentEmail);
   await student.goto("/studio");
   await expect(
+    student.getByRole("heading", { name: "Sua conta ainda não tem um plano" }),
+  ).toBeVisible({ timeout: NAVIGATION_TIMEOUT });
+
+  await student.goto(await confirmationLinkFor(studentEmail));
+  await student.goto("/studio");
+  await expect(
     student.getByRole("heading", { name: "Criar vídeo" }),
-  ).toBeVisible();
+  ).toBeVisible({ timeout: NAVIGATION_TIMEOUT });
 
   await page.reload();
   await expect(row).toContainText("Conta criada", {

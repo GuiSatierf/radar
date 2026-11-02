@@ -3,24 +3,36 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { createDatabase } from "@/db/client";
 import { accessGrant, hotmartAccess, user } from "@/db/schema";
 import { createAuth } from "@/lib/auth";
+import { capturingSender, confirmEmail } from "@/lib/auth.fixtures";
 import { applyAccessChange } from "./access";
 import { grantAccess, listAccessGrants, revokeAccess } from "./access-grants";
 
 const { db, pool } = createDatabase(process.env.TEST_DATABASE_URL ?? "");
-const auth = createAuth(db, {
-  APP_NAME: "Teste",
-  BETTER_AUTH_SECRET: "integration-test-secret-integration-test",
-  BETTER_AUTH_URL: "http://localhost:3210",
-  CLIENT_IP_HEADER: "x-real-ip",
-});
+const sender = capturingSender();
+const auth = createAuth(
+  db,
+  {
+    APP_NAME: "Teste",
+    BETTER_AUTH_SECRET: "integration-test-secret-integration-test",
+    BETTER_AUTH_URL: "http://localhost:3210",
+    CLIENT_IP_HEADER: "x-real-ip",
+  },
+  { emailSender: sender },
+);
 const EMAIL = "aluna@teste.test";
 const OTHER_EMAIL = "outra@teste.test";
 const NOW = new Date("2026-10-27T12:00:00Z");
 
-async function signUp(email = EMAIL): Promise<void> {
+async function signUpWithoutConfirming(email = EMAIL): Promise<void> {
   await auth.api.signUpEmail({
     body: { name: "Aluna Teste", email, password: "senha-forte-123" },
   });
+}
+
+/** An account whose owner already opened the confirmation link. */
+async function signUp(email = EMAIL): Promise<void> {
+  await signUpWithoutConfirming(email);
+  await confirmEmail(auth, sender.sent, email.toLowerCase());
 }
 
 async function planOf(email: string): Promise<string | undefined> {
@@ -43,12 +55,36 @@ afterAll(async () => {
 });
 
 describe("acesso liberado por e-mail", () => {
-  it("deve dar o plano no cadastro para quem foi liberado antes de criar a conta", async () => {
+  it("deve dar o plano ao confirmar o e-mail para quem foi liberado antes de criar a conta", async () => {
     await grantAccess(db, { emails: [EMAIL], plan: "completo" }, NOW);
+    await signUpWithoutConfirming();
+    expect(await planOf(EMAIL)).toBe("none");
 
-    await signUp();
+    await confirmEmail(auth, sender.sent, EMAIL);
 
     expect(await planOf(EMAIL)).toBe("completo");
+  });
+
+  it("não deve dar o plano liberado a quem criou a conta com o e-mail e não confirmou", async () => {
+    await signUpWithoutConfirming();
+
+    await grantAccess(db, { emails: [EMAIL], plan: "completo" }, NOW);
+
+    expect(await planOf(EMAIL)).toBe("none");
+  });
+
+  it("deve tirar o plano ao remover a liberação, mesmo de quem não confirmou o e-mail", async () => {
+    // Accounts from before the confirmation existed got the plan without confirming.
+    await signUpWithoutConfirming();
+    await grantAccess(db, { emails: [EMAIL], plan: "completo" }, NOW);
+    await db
+      .update(user)
+      .set({ plan: "completo" })
+      .where(eq(user.email, EMAIL));
+
+    await revokeAccess(db, EMAIL, NOW);
+
+    expect(await planOf(EMAIL)).toBe("none");
   });
 
   it("deve mudar na hora o plano de quem já tem conta", async () => {

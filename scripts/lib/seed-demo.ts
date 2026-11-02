@@ -27,6 +27,11 @@ export async function seedDemoAccount(input: {
   if (existing.length > 0) return "already-exists";
 
   await input.auth.api.signUpEmail({ body: { ...input.account, email } });
+  // The demo address receives no e-mail, so nobody could open the link: confirmed here instead.
+  await input.db
+    .update(user)
+    .set({ emailVerified: true })
+    .where(eq(user.email, email));
 
   return "created";
 }

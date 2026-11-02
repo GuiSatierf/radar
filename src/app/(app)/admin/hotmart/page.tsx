@@ -133,9 +133,8 @@ export default async function AdminHotmartPage(): Promise<ReactElement> {
             className="rounded-xl bg-amber-100 px-4 py-3 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-100"
           >
             Os avisos da Hotmart já podem chegar e ficam registrados. Os planos
-            ainda não são liberados sozinhos: falta a confirmação de e-mail no
-            cadastro. Quem comprar antes disso não ganha o plano depois, nem
-            quando a liberação ligar: libere à mão em Contas.
+            ainda não são liberados sozinhos. Quem comprar antes de a liberação
+            ligar não ganha o plano depois: libere à mão em Contas.
           </p>
         )}
 
