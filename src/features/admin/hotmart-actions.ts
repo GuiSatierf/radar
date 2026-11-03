@@ -8,6 +8,8 @@ import {
   removeHotmartPlanRow,
   saveHotmartPlanRow,
   saveHottok,
+  setHotmartUnlocksPlans,
+  type UnlockSwitchResult,
 } from "@/features/billing/hotmart/settings";
 import { PAID_PLAN_IDS } from "@/features/plans/plans";
 import { logger } from "@/lib/logger";
@@ -35,6 +37,15 @@ const planKeySchema = z.object({
 const planRowSchema = planKeySchema.extend({
   plan: z.enum(PAID_PLAN_IDS),
 });
+const unlockSwitchSchema = z.object({ unlocks: z.boolean() });
+
+const MISSING_STEP_MESSAGE: Record<
+  Extract<UnlockSwitchResult, { ok: false }>["missing"],
+  string
+> = {
+  hottok: "Salve o código secreto da Hotmart antes de ligar.",
+  plans: "Adicione pelo menos um produto que libere plano antes de ligar.",
+};
 
 export async function saveHotmartHottok(
   input: unknown,
@@ -101,6 +112,34 @@ export async function removeHotmartPlan(
   logger.info(
     { kind: parsed.data.kind, hotmartId: parsed.data.hotmartId },
     "hotmart plan mapping removed by admin",
+  );
+  revalidatePath(HOTMART_ADMIN_PATH);
+
+  return { ok: true };
+}
+
+export async function setHotmartUnlocking(
+  input: unknown,
+): Promise<AdminActionResult> {
+  if ((await isAdminRequest()) === false) return NOT_ALLOWED;
+
+  const parsed = unlockSwitchSchema.safeParse(input);
+
+  if (parsed.success === false)
+    return { ok: false, message: "Não deu para mudar. Atualize a página." };
+
+  const result = await setHotmartUnlocksPlans(
+    getDatabase(),
+    parsed.data.unlocks,
+    new Date(),
+  );
+
+  if (result.ok === false)
+    return { ok: false, message: MISSING_STEP_MESSAGE[result.missing] };
+
+  logger.info(
+    { unlocks: parsed.data.unlocks },
+    "hotmart plan unlocking switched by admin",
   );
   revalidatePath(HOTMART_ADMIN_PATH);
 

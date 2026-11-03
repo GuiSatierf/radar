@@ -69,6 +69,8 @@ export const hotmartSettings = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    // When an admin turned on unlocking plans from purchases; null while it is off.
+    unlocksPlansAt: timestamp("unlocks_plans_at", { withTimezone: true }),
   },
   (table) => [check("hotmart_settings_single_row", sql`${table.id} = 1`)],
 );

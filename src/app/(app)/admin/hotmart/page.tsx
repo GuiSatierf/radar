@@ -7,6 +7,7 @@ import {
   AddPlanForm,
   HottokForm,
   RemovePlanButton,
+  UnlockSwitch,
   WebhookAddress,
 } from "@/features/admin/components/hotmart-setup";
 import {
@@ -21,8 +22,7 @@ import {
 } from "@/features/admin/queries";
 import type { HotmartPlanRow } from "@/features/billing/hotmart/plan-mapping";
 import {
-  getHottokHash,
-  HOTMART_UNLOCKS_PLANS,
+  getHotmartSettings,
   listHotmartPlanRows,
 } from "@/features/billing/hotmart/settings";
 import { PLANS } from "@/features/plans/plans";
@@ -105,6 +105,13 @@ function describeHottok(savedAt: Date | null): string {
   return `Salvo em ${formatUpdatedAt(savedAt)}. ${kept}`;
 }
 
+function describeUnlocking(unlocksPlansAt: Date | null): string {
+  if (unlocksPlansAt == null)
+    return "Os avisos ficam registrados, mas ninguém ganha plano sozinho. Libere à mão em Contas. Ligar não vale para quem comprou antes.";
+
+  return "Quem compra e confirma o e-mail ganha o plano na hora. Cancelamento e reembolso tiram o plano.";
+}
+
 export default async function AdminHotmartPage(): Promise<ReactElement> {
   await requireAdmin();
   const db = getDatabase();
@@ -113,12 +120,13 @@ export default async function AdminHotmartPage(): Promise<ReactElement> {
     getServerEnv().BETTER_AUTH_URL,
   ).toString();
 
-  const [events, hottok, planRows] = await Promise.all([
+  const [events, settings, planRows] = await Promise.all([
     listRecentHotmartEvents(db),
-    getHottokHash(db),
+    getHotmartSettings(db),
     listHotmartPlanRows(db),
   ]);
   const lastEvent = events[0];
+  const unlocksPlansAt = settings?.unlocksPlansAt ?? null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -126,17 +134,6 @@ export default async function AdminHotmartPage(): Promise<ReactElement> {
 
       <section className="flex flex-col gap-3" aria-label="Ligar a Hotmart">
         <h2 className="text-lg font-semibold">Ligar a Hotmart</h2>
-
-        {HOTMART_UNLOCKS_PLANS === false && (
-          <p
-            role="note"
-            className="rounded-xl bg-amber-100 px-4 py-3 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-100"
-          >
-            Os avisos da Hotmart já podem chegar e ficam registrados. Os planos
-            ainda não são liberados sozinhos. Quem comprar antes de a liberação
-            ligar não ganha o plano depois: libere à mão em Contas.
-          </p>
-        )}
 
         <SetupStep
           title="1 · Endereço para colar na Hotmart"
@@ -147,7 +144,7 @@ export default async function AdminHotmartPage(): Promise<ReactElement> {
 
         <SetupStep
           title="2 · Código secreto da Hotmart"
-          hint={describeHottok(hottok?.updatedAt ?? null)}
+          hint={describeHottok(settings?.updatedAt ?? null)}
         >
           <HottokForm />
         </SetupStep>
@@ -158,6 +155,20 @@ export default async function AdminHotmartPage(): Promise<ReactElement> {
         >
           <PlanRows rows={planRows} />
           <AddPlanForm />
+        </SetupStep>
+
+        <SetupStep
+          title="4 · Liberar os planos sozinho"
+          hint={describeUnlocking(unlocksPlansAt)}
+        >
+          <UnlockSwitch
+            isOn={unlocksPlansAt != null}
+            stateLabel={
+              unlocksPlansAt == null
+                ? "Desligado"
+                : `Ligado em ${formatUpdatedAt(unlocksPlansAt)}`
+            }
+          />
         </SetupStep>
       </section>
 

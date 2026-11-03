@@ -3,7 +3,7 @@ import { loadEnvFileIfPresent } from "../scripts/lib/file-exists";
 import { migrateDatabase } from "../scripts/lib/migrate-database";
 import { requireTestDatabaseName } from "../scripts/lib/test-database";
 import { createDatabase } from "../src/db/client";
-import { ad } from "../src/db/schema";
+import { ad, hotmartSettings } from "../src/db/schema";
 import { todayInBrazil } from "../src/features/ads/domain/ads";
 import { collectAds } from "../src/sources/ads/collect-ads";
 import { seedDemoAds } from "../src/sources/ads/demo-ads";
@@ -31,6 +31,8 @@ export default async function globalSetup(): Promise<void> {
     });
     // Ads left by integration tests would change the order the browser tests expect.
     await db.delete(ad);
+    // A run that stopped halfway may have left plan unlocking on; the tests expect it off.
+    await db.update(hotmartSettings).set({ unlocksPlansAt: null });
     const today = todayInBrazil(new Date());
     await seedDemoAds(db, today);
     await collectAds({ db, source: createFakeAdSource(today), today });
