@@ -1,7 +1,7 @@
 import { eq, sql } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { createDatabase } from "@/db/client";
-import { hotmartAccess, hotmartEvent, user } from "@/db/schema";
+import { accessGrant, hotmartAccess, hotmartEvent, user } from "@/db/schema";
 import { createAuth } from "@/lib/auth";
 import { capturingSender, confirmEmail } from "@/lib/auth.fixtures";
 import { applyEndedAccess } from "../access";
@@ -114,7 +114,8 @@ async function planOf(email: string): Promise<string | undefined> {
 
 beforeEach(async () => {
   await db.execute(
-    sql`truncate table "user", ${hotmartAccess}, ${hotmartEvent} cascade`,
+    // A grant left for the same e-mail by another suite would hand out its plan on confirmation.
+    sql`truncate table "user", ${hotmartAccess}, ${hotmartEvent}, ${accessGrant} cascade`,
   );
 });
 
