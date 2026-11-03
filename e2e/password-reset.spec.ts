@@ -63,7 +63,9 @@ test("quem esqueceu a senha recebe o link, cria uma nova e entra com ela", async
   await page.getByLabel("Repita a senha nova").fill(NEW_PASSWORD);
   await page.getByRole("button", { name: "Salvar senha nova" }).click();
 
-  await expect(page.getByText("Senha nova salva. Entre com ela.")).toBeVisible({
+  await expect(
+    page.getByText("Senha nova salva e e-mail confirmado. Entre com ela."),
+  ).toBeVisible({
     timeout: NAVIGATION_TIMEOUT,
   });
   await page.getByLabel("E-mail").fill(email);

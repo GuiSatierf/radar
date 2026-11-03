@@ -7,7 +7,12 @@ export const metadata: Metadata = { title: "Entrar" };
 export default async function SignInPage(
   props: PageProps<"/entrar">,
 ): Promise<ReactElement> {
-  const { senha } = await props.searchParams;
+  const { senha, email } = await props.searchParams;
 
-  return <SignInForm passwordChanged={senha === "nova"} />;
+  return (
+    <SignInForm
+      passwordChanged={senha === "nova"}
+      confirmingEmail={email === "confirmar"}
+    />
+  );
 }

@@ -11,6 +11,8 @@ import { useAuthForm } from "./use-auth-form";
 export function SignInForm(props: {
   /** Back from "Crie uma senha nova": say it worked. */
   passwordChanged?: boolean;
+  /** Sent here by a confirmation link opened outside the account. */
+  confirmingEmail?: boolean;
 }): ReactElement {
   const form = useAuthForm({
     schema: signInSchema,
@@ -31,7 +33,17 @@ export function SignInForm(props: {
           role="status"
           className="rounded-lg bg-accent px-3 py-2 text-sm text-accent-foreground"
         >
-          Senha nova salva. Entre com ela.
+          Senha nova salva e e-mail confirmado. Entre com ela.
+        </p>
+      )}
+
+      {props.confirmingEmail === true && (
+        <p
+          role="status"
+          className="rounded-lg bg-accent px-3 py-2 text-sm text-accent-foreground"
+        >
+          Para confirmar seu e-mail, entre na sua conta neste aparelho e abra o
+          link do e-mail de novo.
         </p>
       )}
 

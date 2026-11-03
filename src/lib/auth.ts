@@ -3,6 +3,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import { nextCookies } from "better-auth/next-js";
 import { admin } from "better-auth/plugins/admin";
+import { eq } from "drizzle-orm";
 import { type Database, getDatabase } from "@/db/client";
 import * as schema from "@/db/schema";
 import { applyWaitingPlan } from "@/features/billing/access";
@@ -35,6 +36,8 @@ const SEND_VERIFICATION_PATH = "/send-verification-email";
 // "Reenviar e-mail" a few times is normal; more than that only fills someone's inbox.
 const VERIFICATION_EMAILS_PER_MINUTE = 3;
 const RATE_LIMIT_WINDOW_SECONDS = 60;
+/** Where a confirmation link opened outside the account goes: sign in here, then open it again. */
+export const SIGN_IN_TO_CONFIRM_PATH = "/entrar?email=confirmar";
 
 type AuthEnv = Pick<
   ServerEnv,
@@ -97,12 +100,27 @@ function sendLinkEmail(
   };
 }
 
+/**
+ * A reset link proves the e-mail is the person's, and the new password is theirs too: the account
+ * counts as confirmed and gets the plan waiting for it, while every other device was signed out.
+ */
+async function confirmByPasswordReset(
+  db: Database,
+  account: { id: string; email: string },
+): Promise<void> {
+  await db
+    .update(schema.user)
+    .set({ emailVerified: true })
+    .where(eq(schema.user.id, account.id));
+  await applyWaitingPlan(db, account.email.trim().toLowerCase(), new Date());
+}
+
 export function createAuth(
   db: Database,
   env: AuthEnv,
   deps: { emailSender: EmailSender | null } = { emailSender: null },
 ) {
-  return betterAuth({
+  const auth = betterAuth({
     appName: env.APP_NAME,
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL,
@@ -124,9 +142,14 @@ export function createAuth(
       ),
       // A new password logs out every other device, in case someone else had the old one.
       revokeSessionsOnPasswordReset: true,
+      onPasswordReset: async ({ user }) => {
+        await confirmByPasswordReset(db, user);
+      },
     },
     // Anyone can type someone else's e-mail at sign-up, so a plan bought on Hotmart or given by an
-    // admin waits for the link: only the e-mail's owner can open it.
+    // admin waits for the link: only the e-mail's owner can open it. The link alone is not enough,
+    // though: whoever signed up still knows the password. It confirms only in a browser already
+    // signed in to that account, so the e-mail's owner and the password's owner are the same.
     emailVerification: {
       sendOnSignUp: true,
       sendVerificationEmail: sendLinkEmail(
@@ -135,8 +158,19 @@ export function createAuth(
         "email-verification",
         buildEmailVerificationEmail,
       ),
-      autoSignInAfterVerification: true,
       expiresIn: VERIFICATION_LINK_HOURS * SECONDS_PER_HOUR,
+      beforeEmailVerification: async (account, request): Promise<void> => {
+        const current =
+          request == null
+            ? null
+            : await auth.api.getSession({ headers: request.headers });
+
+        if (current?.user.id === account.id) return;
+
+        throw new APIError("FOUND", undefined, {
+          Location: SIGN_IN_TO_CONFIRM_PATH,
+        });
+      },
       afterEmailVerification: async (verifiedUser) => {
         await applyWaitingPlan(
           db,
@@ -190,6 +224,8 @@ export function createAuth(
       nextCookies(),
     ],
   });
+
+  return auth;
 }
 
 export type Auth = ReturnType<typeof createAuth>;
