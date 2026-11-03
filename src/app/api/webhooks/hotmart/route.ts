@@ -1,7 +1,6 @@
 import { getDatabase } from "@/db/client";
 import {
-  getHottokHash,
-  HOTMART_UNLOCKS_PLANS,
+  getHotmartSettings,
   loadHotmartPlanMapping,
 } from "@/features/billing/hotmart/settings";
 import { handleHotmartWebhook } from "@/features/billing/hotmart/webhook";
@@ -12,7 +11,7 @@ import { logger } from "@/lib/logger";
 export async function POST(request: Request): Promise<Response> {
   try {
     const db = getDatabase();
-    const settings = await getHottokHash(db);
+    const settings = await getHotmartSettings(db);
 
     if (settings == null) return new Response(null, { status: 404 });
 
@@ -21,7 +20,7 @@ export async function POST(request: Request): Promise<Response> {
       request,
       hottokHash: settings.hash,
       loadMapping: () => loadHotmartPlanMapping(db),
-      unlocksPlans: HOTMART_UNLOCKS_PLANS,
+      unlocksPlans: settings.unlocksPlansAt != null,
       now: new Date(),
     });
     logger.info({ status: response.status }, "hotmart webhook handled");

@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, isNull } from "drizzle-orm";
 import type { Database } from "@/db/client";
 import { hotmartPlanMapping, hotmartSettings } from "@/db/schema";
 import { PAID_PLAN_IDS } from "@/features/plans/plans";
@@ -11,13 +11,6 @@ import {
   type HotmartPlanRow,
 } from "./plan-mapping";
 
-/**
- * Off until the owner decides to sell through Hotmart: until then events are only recorded, never
- * applied. What kept it off (security review, lead 1) is solved: plans only reach accounts whose
- * owner confirmed the e-mail (syncAccountPlan).
- */
-export const HOTMART_UNLOCKS_PLANS = false;
-
 const SETTINGS_ROW_ID = 1;
 
 /** The code itself is never stored: only this hash, compared in constant time on each event. */
@@ -25,19 +18,71 @@ export function hashHottok(hottok: string): string {
   return createHash("sha256").update(hottok, "utf8").digest("hex");
 }
 
-export async function getHottokHash(db: Database): Promise<{
+export type HotmartSettings = {
   hash: string;
   updatedAt: Date;
-} | null> {
+  /** Null while purchases are only recorded and never change a plan. */
+  unlocksPlansAt: Date | null;
+};
+
+export async function getHotmartSettings(
+  db: Database,
+): Promise<HotmartSettings | null> {
   const [row] = await db
     .select({
       hash: hotmartSettings.hottokHash,
       updatedAt: hotmartSettings.updatedAt,
+      unlocksPlansAt: hotmartSettings.unlocksPlansAt,
     })
     .from(hotmartSettings)
     .where(eq(hotmartSettings.id, SETTINGS_ROW_ID));
 
   return row ?? null;
+}
+
+export type UnlockSwitchResult =
+  | { ok: true }
+  | { ok: false; missing: "hottok" | "plans" };
+
+/**
+ * Turns unlocking plans from purchases on or off. It only turns on once the code is saved and at
+ * least one product unlocks a plan, so it never runs half set up; turning it on again keeps the
+ * first date.
+ */
+export async function setHotmartUnlocksPlans(
+  db: Database,
+  unlocks: boolean,
+  now: Date,
+): Promise<UnlockSwitchResult> {
+  if (unlocks === false) {
+    await db
+      .update(hotmartSettings)
+      .set({ unlocksPlansAt: null })
+      .where(eq(hotmartSettings.id, SETTINGS_ROW_ID));
+
+    return { ok: true };
+  }
+
+  const [settings, planRows] = await Promise.all([
+    getHotmartSettings(db),
+    listHotmartPlanRows(db),
+  ]);
+
+  if (settings == null) return { ok: false, missing: "hottok" };
+
+  if (planRows.length === 0) return { ok: false, missing: "plans" };
+
+  await db
+    .update(hotmartSettings)
+    .set({ unlocksPlansAt: now })
+    .where(
+      and(
+        eq(hotmartSettings.id, SETTINGS_ROW_ID),
+        isNull(hotmartSettings.unlocksPlansAt),
+      ),
+    );
+
+  return { ok: true };
 }
 
 export async function saveHottok(

@@ -28,9 +28,11 @@ test("o admin liga a Hotmart pela tela e o aviso de teste chega só registrado",
   await expect(
     page.getByRole("heading", { name: "Ligar a Hotmart" }),
   ).toBeVisible({ timeout: NAVIGATION_TIMEOUT });
-  await expect(page.getByRole("note")).toContainText(
-    "Os planos ainda não são liberados sozinhos",
-  );
+  const unlockSwitch = page.getByRole("switch", {
+    name: "Liberar os planos sozinho",
+  });
+  await expect(unlockSwitch).toHaveAttribute("aria-checked", "false");
+  await expect(unlockSwitch).toContainText("Desligado");
   await expect(page.getByText("/api/webhooks/hotmart")).toBeVisible();
 
   await page.getByLabel("Código secreto da Hotmart").fill(HOTTOK);
@@ -63,6 +65,16 @@ test("o admin liga a Hotmart pela tela e o aviso de teste chega só registrado",
   await expect(page.getByText("Registrado").first()).toBeVisible({
     timeout: NAVIGATION_TIMEOUT,
   });
+
+  await unlockSwitch.click();
+  await expect(page.getByText("Liberação automática ligada")).toBeVisible();
+  await expect(unlockSwitch).toHaveAttribute("aria-checked", "true");
+  await expect(unlockSwitch).toContainText(/^Ligado em /);
+
+  // Off again before the row goes, so later tests still see events only recorded.
+  await unlockSwitch.click();
+  await expect(page.getByText("Liberação automática desligada")).toBeVisible();
+  await expect(unlockSwitch).toHaveAttribute("aria-checked", "false");
 
   page.once("dialog", (dialog) => dialog.accept());
   await page

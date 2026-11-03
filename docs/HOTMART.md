@@ -2,7 +2,7 @@
 
 Com isto, quem compra na Hotmart já entra com o plano liberado, e quem pede reembolso ou cancela perde o acesso sozinho. Ninguém precisa dar acesso à conta da Hotmart: quem cuida dela faz tudo entre a Hotmart e a aba **Admin → Hotmart** do app.
 
-> **Enquanto a confirmação de e-mail não existir** (revisão de segurança, pista 1), os avisos da Hotmart chegam e ficam registrados, mas **nenhum plano é liberado sozinho**. A aba mostra isso numa faixa amarela. Dá para deixar tudo configurado e testado antes. Uma compra que chegar nessa fase não é aplicada depois, nem quando a liberação ligar (o aviso já foi recebido e a Hotmart não manda de novo): o admin libera esse plano à mão em **Admin → Contas**.
+> A liberação automática nasce **desligada**: os avisos da Hotmart chegam e ficam registrados, mas nenhum plano muda até um admin ligar o passo 4 da aba. Dá para deixar tudo configurado e testado antes. Uma compra que chegar com ela desligada não é aplicada depois, nem quando ela ligar (o aviso já foi recebido e a Hotmart não manda de novo): o admin libera esse plano à mão em **Admin → Contas**.
 
 ## 1. Criar o webhook na Hotmart
 
@@ -48,7 +48,13 @@ Quem cuida do Coolify cria, na aba **Scheduled Tasks** do recurso do app, a tare
 |---|---|---|---|
 | Fim de acesso | `0 10 * * *` | app | `wget -qO- --post-data="" --header="Authorization: Bearer $CRON_SECRET" http://127.0.0.1:3210/api/cron/expire-access` |
 
-## 5. Testar
+## 5. Ligar a liberação automática
+
+Na aba **Admin → Hotmart**, passo 4, toque na chave **Liberar os planos sozinho**. Ela só liga depois que o código do passo 2 e pelo menos um produto do passo 3 estão salvos. A tela mostra desde quando está ligada; desligar volta a só registrar os avisos.
+
+Só quem é admin vê a aba e consegue mudar a chave: o servidor confere de novo a cada mudança.
+
+## 6. Testar
 
 Na tela de Webhook da Hotmart, use **Enviar teste** para a URL do passo 1. Na aba **Histórico** da Hotmart, a resposta deve ser `200`, e o aviso aparece na lista da aba **Admin → Hotmart**.
 

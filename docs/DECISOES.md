@@ -69,7 +69,7 @@ Uma linha por decisão: data, o que foi decidido, por quê, o que foi descartado
   - Custo: quem abre o link num navegador em que não está na conta precisa entrar nele uma vez. Descartado: pedir senha nova a todo comprador, que faria quem é honesto criar a senha duas vezes.
   - Descartado: pedir o código da transação da Hotmart no cadastro (a pessoa precisaria achar o código, e o plano liberado pelo admin não tem código).
   - **O hottok fica só como SHA-256** (`hotmart_settings`): o banco nunca guarda o código, e a comparação continua em tempo constante, entre os dois resumos. Sem o código salvo, a rota responde 404, como antes sem a variável.
-  - **Planos não são liberados sozinhos enquanto a pista 1 da revisão de segurança estiver aberta** (`HOTMART_UNLOCKS_PLANS` em `src/features/billing/hotmart/settings.ts`): os avisos ficam registrados como "Registrado" e nada muda nas contas.
+  - **A liberação automática dos planos é uma chave do Admin** (`hotmart_settings.unlocks_plans_at`, migração 0011; antes era uma constante no código). Nasce desligada: os avisos ficam registrados como "Registrado" e nada muda nas contas. Só liga com o código e pelo menos um produto salvos, guarda quando ligou e só um admin muda, conferido de novo no servidor. Descartado: variável de ambiente (só quem cuida do Coolify mudaria, e cada troca exigiria reiniciar o app).
   - **Descartados:** guardar o hottok cifrado (exigiria uma chave a mais, e o app nunca precisa ler o código de volta) e deixar as variáveis como alternativa ao Admin (duas fontes para o mesmo dado).
 
 ## Rankings

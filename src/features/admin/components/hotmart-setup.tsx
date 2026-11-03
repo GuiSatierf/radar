@@ -8,10 +8,12 @@ import { Input } from "@/components/ui/input";
 import type { HotmartIdKind } from "@/features/billing/hotmart/plan-mapping";
 import { PAID_PLAN_IDS, PLANS } from "@/features/plans/plans";
 import { useIsClient } from "@/lib/use-is-client";
+import { cn } from "@/lib/utils";
 import {
   addHotmartPlan,
   removeHotmartPlan,
   saveHotmartHottok,
+  setHotmartUnlocking,
 } from "../hotmart-actions";
 import { HOTMART_KIND_LABEL } from "../hotmart-labels";
 
@@ -208,5 +210,60 @@ export function RemovePlanButton(props: {
     >
       <Trash2 className="size-4" aria-hidden />
     </Button>
+  );
+}
+
+export function UnlockSwitch(props: {
+  isOn: boolean;
+  /** Already written for the screen, e.g. "Ligado em 03/11/2026, 10:20". */
+  stateLabel: string;
+}): ReactElement {
+  const [isPending, startTransition] = useTransition();
+
+  function toggle(): void {
+    startTransition(async () => {
+      const result = await setHotmartUnlocking({
+        unlocks: props.isOn === false,
+      });
+
+      if (result.ok === false) {
+        toast.error(result.message);
+        return;
+      }
+
+      toast.success(
+        props.isOn
+          ? "Liberação automática desligada"
+          : "Liberação automática ligada",
+      );
+    });
+  }
+
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={props.isOn}
+      aria-label="Liberar os planos sozinho"
+      disabled={isPending}
+      onClick={toggle}
+      className="flex min-h-11 items-center gap-3 self-start rounded-lg text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-60"
+    >
+      <span
+        aria-hidden
+        className={cn(
+          "relative h-5 w-9 shrink-0 rounded-full transition-colors",
+          props.isOn ? "bg-primary" : "bg-input",
+        )}
+      >
+        <span
+          className={cn(
+            "absolute top-0.5 size-4 rounded-full bg-background shadow-sm transition-[left]",
+            props.isOn ? "left-[1.125rem]" : "left-0.5",
+          )}
+        />
+      </span>
+      <span>{props.stateLabel}</span>
+    </button>
   );
 }

@@ -78,6 +78,13 @@
       "when": 1793408251096,
       "tag": "0010_studio",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793701020885,
+      "tag": "0011_hotmart_unlock_switch",
+      "breakpoints": true
     }
   ]
 }

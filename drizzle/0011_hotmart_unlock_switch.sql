@@ -1,0 +1,1 @@
+ALTER TABLE "hotmart_settings" ADD COLUMN "unlocks_plans_at" timestamp with time zone;
