@@ -44,7 +44,11 @@ test("o admin liga a Hotmart pela tela e o aviso de teste chega só registrado",
   await page.getByLabel("Código na Hotmart").fill(planCode);
   await page.getByLabel("Plano que ele libera").selectOption("pro");
   await page.getByRole("button", { name: "Adicionar" }).click();
-  const row = page.getByRole("listitem").filter({ hasText: planCode });
+  // Inside the page only: the "tirado" toast is a list item with the same code.
+  const row = page
+    .getByRole("main")
+    .getByRole("listitem")
+    .filter({ hasText: planCode });
   await expect(row).toContainText("Pro");
   // Drawn on the server: the kind's name must not come out blank.
   await expect(row).toContainText("Assinatura");
