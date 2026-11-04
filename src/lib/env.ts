@@ -52,6 +52,11 @@ const serverEnvSchema = z.object({
       .regex(SENDER_ADDRESS, { error: 'use "Nome <endereco@dominio>"' })
       .optional(),
   ),
+  // Encrypts the video AI keys an admin saves. Without it, the admin cannot save keys.
+  VIDEO_KEYS_SECRET: z.preprocess(
+    blankToUndefined,
+    z.string().min(MIN_SECRET_LENGTH).optional(),
+  ),
 });
 
 const serverEnvWithEmailSchema = serverEnvSchema.refine(

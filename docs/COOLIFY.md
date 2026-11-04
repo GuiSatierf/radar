@@ -37,6 +37,7 @@ O Coolify avisa que https com `sslip.io` pode falhar, porque o serviço que emit
 Na aba **Environment Variables**:
 
 - As que começam com `SERVICE_` foram geradas pelo Coolify. **Não mexa.**
+  - `SERVICE_BASE64_64_VIDEOKEYS` vira `VIDEO_KEYS_SECRET`, que embaralha as chaves das IAs de vídeo salvas no Admin. Se ela mudar, as chaves salvas deixam de abrir e precisam ser coladas de novo.
 - `SUPPORT_URL`: o link do "Falar com o suporte" (por exemplo, um link do WhatsApp que começa com `https://`). Pode ficar vazio.
 - `ADMIN_EMAIL`: deixe vazio por enquanto (passo 6).
 - `SHOPEE_AFFILIATE_APP_ID` e `SHOPEE_AFFILIATE_SECRET`: o AppID e a senha da API de afiliados da Shopee. Preenchidos, a coleta diária traz os produtos reais; vazios, o Radar fica com o catálogo de exemplo. Preencha os dois ou nenhum.

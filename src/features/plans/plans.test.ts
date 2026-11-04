@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { canUseTool, listLockedTools } from "./access";
-import { isPlanId, PLANS, TOOLS } from "./plans";
+import { isPlanId, TOOLS } from "./plans";
 
 const subscriber = (plan: "none" | "full") => ({
   plan,
@@ -32,10 +32,5 @@ describe("tipos de acesso", () => {
     expect(isPlanId("pro")).toBe(false);
     expect(isPlanId("radar")).toBe(false);
     expect(isPlanId(null)).toBe(false);
-  });
-
-  it("deve ter vídeos só para quem tem acesso", () => {
-    expect(PLANS.full.monthlyVideos).toBeGreaterThan(0);
-    expect(PLANS.none.monthlyVideos).toBe(0);
   });
 });

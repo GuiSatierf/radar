@@ -23,7 +23,6 @@ export const FULL_ACCESS: PlanId = "full";
 export interface Plan {
   readonly id: PlanId;
   readonly tools: readonly Tool[];
-  readonly monthlyVideos: number;
 }
 
 const ALL_TOOLS: readonly Tool[] = TOOLS;
@@ -32,12 +31,10 @@ export const PLANS: Readonly<Record<PlanId, Plan>> = {
   none: {
     id: "none",
     tools: [],
-    monthlyVideos: 0,
   },
   full: {
     id: "full",
     tools: ALL_TOOLS,
-    monthlyVideos: 12,
   },
 };
 

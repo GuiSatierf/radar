@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createDatabase } from "@/db/client";
-import { product, studioVideo, user } from "@/db/schema";
+import { product, studioVideo, user, videoSettings } from "@/db/schema";
 import { collectProducts } from "@/sources/products/collect-products";
 import { createFakeProductSource } from "@/sources/products/fake-product-source";
 
@@ -32,7 +32,7 @@ function signedInAs(plan: "none" | "full") {
 beforeEach(async () => {
   afterMock.mockReset();
   await db.execute(
-    sql`truncate table "user", ${product}, ${studioVideo} cascade`,
+    sql`truncate table "user", ${product}, ${studioVideo}, ${videoSettings} cascade`,
   );
   await db.insert(user).values({
     id: USER_ID,

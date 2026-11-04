@@ -13,7 +13,8 @@ import {
   toCard,
 } from "@/features/radar/queries";
 import { isVideoFormat, type VideoFormat } from "./domain/formats";
-import { countVideosThisMonth } from "./queue";
+import type { VideoLimitPeriod } from "./domain/quota";
+import { countVideosInPeriod } from "./queue";
 
 // A plan gives at most 30 videos a month and they last 15 days, so this is never reached.
 const MAX_LIBRARY_VIDEOS = 60;
@@ -39,7 +40,8 @@ export interface LibraryVideo {
 
 export interface StudioLibrary {
   readonly videos: readonly LibraryVideo[];
-  readonly usedThisMonth: number;
+  /** Videos made in the current limit period. */
+  readonly usedInPeriod: number;
   /** True while a video of this person is queued or being made: only one at a time. */
   readonly hasActiveVideo: boolean;
   /** When the queued or in-progress video was asked for, or null when there is none. */
@@ -50,13 +52,14 @@ function toLibraryStatus(status: string): LibraryVideoStatus | null {
   return LIBRARY_STATUSES.find((known) => known === status) ?? null;
 }
 
-/** The person's videos still in the library (newest first) and how many this month used. */
+/** The person's videos still in the library (newest first) and how many the current period used. */
 export async function getStudioLibrary(input: {
   db: Database;
   userId: string;
+  period: VideoLimitPeriod;
   now: Date;
 }): Promise<StudioLibrary> {
-  const [rows, usedThisMonth] = await Promise.all([
+  const [rows, usedInPeriod] = await Promise.all([
     input.db
       .select({
         id: studioVideo.id,
@@ -81,7 +84,7 @@ export async function getStudioLibrary(input: {
       )
       .orderBy(desc(studioVideo.createdAt))
       .limit(MAX_LIBRARY_VIDEOS),
-    countVideosThisMonth(input.db, input.userId, input.now),
+    countVideosInPeriod(input.db, input.userId, input.period, input.now),
   ]);
   const videos: LibraryVideo[] = [];
 
@@ -100,7 +103,7 @@ export async function getStudioLibrary(input: {
 
   return {
     videos,
-    usedThisMonth,
+    usedInPeriod,
     hasActiveVideo: active != null,
     activeVideoCreatedAt: active?.createdAt ?? null,
   };

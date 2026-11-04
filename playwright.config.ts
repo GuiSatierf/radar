@@ -47,6 +47,8 @@ export default defineConfig({
         "e2e-secret-e2e-secret-e2e-secret-e2e",
       // "Esqueci minha senha" writes its e-mails here; the tests read the link back.
       EMAIL_OUTBOX_DIR: E2E_OUTBOX_DIR,
+      // Lets the admin test save a video AI key; a test value, never a real one.
+      VIDEO_KEYS_SECRET: "e2e-video-keys-secret-e2e-video-keys",
     },
   },
 });

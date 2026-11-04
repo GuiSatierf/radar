@@ -11,7 +11,7 @@ import { user } from "./auth-schema";
 /**
  * Videos made in the Studio. Each row is a queue item first ("queued", then "generating") and a
  * library item after ("ready" or "failed"). Rows stay after the video expires, because every
- * video made this month still counts toward the plan's monthly limit.
+ * video made in the current period still counts toward the video limit.
  */
 export const studioVideo = pgTable(
   "studio_video",

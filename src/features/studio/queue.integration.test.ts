@@ -9,9 +9,10 @@ import {
   SAMPLE_VIDEO_URL,
 } from "@/sources/video/fake-video-generator";
 import type { VideoGenerator } from "@/sources/video/video-generator";
+import type { VideoLimit } from "./domain/quota";
 import { getStudioLibrary } from "./queries";
 import {
-  countVideosThisMonth,
+  countVideosInPeriod,
   enqueueVideo,
   expireOldVideos,
   processVideoQueue,
@@ -22,15 +23,16 @@ const { db, pool } = createDatabase(process.env.TEST_DATABASE_URL ?? "");
 const NOW = new Date("2026-10-30T15:00:00Z");
 const USER_ID = "user-studio";
 const instantGenerator = createFakeVideoGenerator({ generationTimeInMs: 0 });
+const ONE_PER_MONTH: VideoLimit = { count: 1, period: "month" };
 let productId = "";
 
-function enqueue(overrides: { monthlyVideos?: number; now?: Date } = {}) {
+function enqueue(overrides: { limit?: VideoLimit; now?: Date } = {}) {
   return enqueueVideo({
     db,
     userId: USER_ID,
     productId,
     format: "hands",
-    monthlyVideos: overrides.monthlyVideos ?? 12,
+    limit: overrides.limit ?? { count: 12, period: "month" },
     now: overrides.now ?? NOW,
   });
 }
@@ -93,20 +95,20 @@ describe("enqueueVideo", () => {
   });
 
   it("deve recusar quando os vídeos do mês acabaram", async () => {
-    await enqueue({ monthlyVideos: 1 });
+    await enqueue({ limit: ONE_PER_MONTH });
     await processVideoQueue({
       db,
       generator: instantGenerator,
       clock: () => NOW,
     });
 
-    const result = await enqueue({ monthlyVideos: 1 });
+    const result = await enqueue({ limit: ONE_PER_MONTH });
 
     expect(result).toEqual({ ok: false, reason: "no-videos-left" });
   });
 
   it("deve liberar de novo no mês seguinte de Brasília", async () => {
-    await enqueue({ monthlyVideos: 1 });
+    await enqueue({ limit: ONE_PER_MONTH });
     await processVideoQueue({
       db,
       generator: instantGenerator,
@@ -114,11 +116,33 @@ describe("enqueueVideo", () => {
     });
 
     const result = await enqueue({
-      monthlyVideos: 1,
+      limit: ONE_PER_MONTH,
       now: new Date("2026-11-01T03:00:00Z"),
     });
 
     expect(result.ok).toBe(true);
+  });
+
+  it("com limite por dia, deve recusar no mesmo dia e liberar no dia seguinte de Brasília", async () => {
+    const onePerDay: VideoLimit = { count: 1, period: "day" };
+    await enqueue({ limit: onePerDay });
+    await processVideoQueue({
+      db,
+      generator: instantGenerator,
+      clock: () => NOW,
+    });
+
+    const sameDay = await enqueue({
+      limit: onePerDay,
+      now: new Date("2026-10-31T02:00:00Z"),
+    });
+    const nextDay = await enqueue({
+      limit: onePerDay,
+      now: new Date("2026-10-31T03:00:00Z"),
+    });
+
+    expect(sameDay).toEqual({ ok: false, reason: "no-videos-left" });
+    expect(nextDay.ok).toBe(true);
   });
 });
 
@@ -158,7 +182,7 @@ describe("processVideoQueue", () => {
     const [video] = await storedVideos();
     expect(video?.status).toBe("failed");
     expect(video?.errorMessage).toBe("Error: service unavailable");
-    expect(await countVideosThisMonth(db, USER_ID, NOW)).toBe(0);
+    expect(await countVideosInPeriod(db, USER_ID, "month", NOW)).toBe(0);
     expect((await enqueue()).ok).toBe(true);
   });
 
@@ -219,9 +243,14 @@ describe("expireOldVideos e a biblioteca", () => {
     expect(expired).toBe(1);
     const [video] = await storedVideos();
     expect(video).toMatchObject({ status: "expired", videoUrl: null });
-    const library = await getStudioLibrary({ db, userId: USER_ID, now: later });
+    const library = await getStudioLibrary({
+      db,
+      userId: USER_ID,
+      period: "month",
+      now: later,
+    });
     expect(library.videos).toHaveLength(0);
-    expect(await countVideosThisMonth(db, USER_ID, NOW)).toBe(1);
+    expect(await countVideosInPeriod(db, USER_ID, "month", NOW)).toBe(1);
   });
 
   it("não deve passar a gastar da conta quando o vídeo que falhou sai da biblioteca", async () => {
@@ -241,10 +270,11 @@ describe("expireOldVideos e a biblioteca", () => {
 
     await expireOldVideos(db, nextDay);
 
-    expect(await countVideosThisMonth(db, USER_ID, nextDay)).toBe(0);
+    expect(await countVideosInPeriod(db, USER_ID, "month", nextDay)).toBe(0);
     const library = await getStudioLibrary({
       db,
       userId: USER_ID,
+      period: "month",
       now: nextDay,
     });
     expect(library.videos).toHaveLength(0);
@@ -261,6 +291,7 @@ describe("expireOldVideos e a biblioteca", () => {
     const library = await getStudioLibrary({
       db,
       userId: USER_ID,
+      period: "month",
       now: new Date("2026-11-14T15:00:01Z"),
     });
 
@@ -270,10 +301,15 @@ describe("expireOldVideos e a biblioteca", () => {
   it("deve mostrar o vídeo sendo feito e avisar que tem um em andamento", async () => {
     await enqueue();
 
-    const library = await getStudioLibrary({ db, userId: USER_ID, now: NOW });
+    const library = await getStudioLibrary({
+      db,
+      userId: USER_ID,
+      period: "month",
+      now: NOW,
+    });
 
     expect(library.hasActiveVideo).toBe(true);
     expect(library.videos[0]?.status).toBe("queued");
-    expect(library.usedThisMonth).toBe(1);
+    expect(library.usedInPeriod).toBe(1);
   });
 });
