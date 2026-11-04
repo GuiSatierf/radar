@@ -258,7 +258,7 @@ describe("webhook da Hotmart", () => {
     expect(await planOf(EMAIL)).toBe("none");
   });
 
-  it("deve mudar o plano na troca depois do cancelamento, mas manter o fim", async () => {
+  it("deve manter o acesso na troca depois do cancelamento, e também o fim", async () => {
     await signUp();
     await send(
       purchaseEvent({
@@ -352,7 +352,7 @@ describe("webhook da Hotmart", () => {
       applyEndedAccess(failingOnSecondAccountWrite(), afterPaidPeriod),
     ).rejects.toThrow("simulated database failure");
     const plans = [await planOf(EMAIL), await planOf(OTHER)];
-    expect(plans.toSorted()).toEqual(["none", "full"]);
+    expect(plans.toSorted()).toEqual(["full", "none"]);
 
     expect(await applyEndedAccess(db, afterPaidPeriod)).toBe(1);
     expect([await planOf(EMAIL), await planOf(OTHER)]).toEqual([
@@ -361,7 +361,7 @@ describe("webhook da Hotmart", () => {
     ]);
   });
 
-  it("deve trocar o plano quando a pessoa muda de plano na Hotmart", async () => {
+  it("deve manter o acesso quando a pessoa muda de plano na Hotmart", async () => {
     await signUp();
     await send(
       purchaseEvent({
