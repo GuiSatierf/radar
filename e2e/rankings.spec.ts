@@ -13,7 +13,7 @@ test.beforeEach(async ({ page }) => {
 test("os rankings abrem nos mais vendidos e trocam de lista", async ({
   page,
 }, testInfo) => {
-  await signUp(page, uniqueEmail(testInfo.title), "radar");
+  await signUp(page, uniqueEmail(testInfo.title), "full");
 
   await page.goto("/rankings");
 
@@ -40,7 +40,7 @@ test("os rankings abrem nos mais vendidos e trocam de lista", async ({
 test("o ranking de um produto abre a ficha dele no Radar", async ({
   page,
 }, testInfo) => {
-  await signUp(page, uniqueEmail(testInfo.title), "radar");
+  await signUp(page, uniqueEmail(testInfo.title), "full");
   await page.goto("/rankings");
 
   await page.getByRole("list").last().getByRole("link").first().click();

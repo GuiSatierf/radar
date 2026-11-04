@@ -72,7 +72,7 @@ export const SETTINGS_NAVIGATION: NavigationItem = {
 export const ADMIN_NAVIGATION: NavigationItem = {
   href: "/admin",
   label: "Admin",
-  description: "Contas, planos, anúncios e a coleta de produtos.",
+  description: "Contas, acessos, anúncios e a coleta de produtos.",
   icon: ShieldCheck,
 };
 

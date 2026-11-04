@@ -13,7 +13,7 @@ export function VideoQuotaBox(props: {
   if (quota.limit === 0) {
     return (
       <section className="rounded-2xl border border-border bg-card p-4 text-sm">
-        Seu plano não inclui vídeos.
+        Os vídeos não estão liberados para a sua conta.
       </section>
     );
   }

@@ -8,7 +8,8 @@ export function describeQuotaBlock(
   quota: VideoQuota,
   renewal: string,
 ): string | null {
-  if (quota.limit === 0) return "Seu plano não inclui vídeos.";
+  if (quota.limit === 0)
+    return "Os vídeos não estão liberados para a sua conta.";
 
   if (quota.remaining > 0) return null;
 

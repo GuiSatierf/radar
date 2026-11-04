@@ -12,7 +12,6 @@ import {
   type AccessGrantRow,
   listAccessGrants,
 } from "@/features/billing/access-grants";
-import { PLANS } from "@/features/plans/plans";
 import { requireAdmin } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Admin · Acessos" };
@@ -28,7 +27,6 @@ function GrantItem(props: { row: AccessGrantRow }): ReactElement {
       <Badge variant={row.hasAccount ? "secondary" : "outline"}>
         {row.hasAccount ? "Conta criada" : "Sem conta ainda"}
       </Badge>
-      <span className="font-medium">{PLANS[row.plan].label}</span>
       <RevokeAccessButton email={row.email} />
     </li>
   );
@@ -49,7 +47,7 @@ export default async function AdminAccessPage(): Promise<ReactElement> {
         <div>
           <h2 className="text-lg font-semibold">Liberar acesso por e-mail</h2>
           <p className="text-sm text-muted-foreground">
-            Quem já tem conta e confirmou o e-mail ganha o plano na hora. Os
+            Quem já tem conta e confirmou o e-mail ganha o acesso na hora. Os
             outros ganham assim que confirmarem o e-mail pelo link que mandamos.
           </p>
         </div>

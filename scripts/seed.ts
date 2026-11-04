@@ -29,7 +29,7 @@ try {
     },
   });
   // The demo shows every tool; another account is needed to see the locked screens.
-  await setPlanByEmail(db, demoEmail, "pro");
+  await setPlanByEmail(db, demoEmail, "full");
   const admin = await grantAdminRole(db, process.env.ADMIN_EMAIL);
   const products = await collectAndRecord({
     db,

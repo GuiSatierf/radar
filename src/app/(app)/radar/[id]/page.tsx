@@ -189,7 +189,7 @@ function StudioLink(props: {
     >
       <Icon className="size-4" aria-hidden />
       Criar vídeo no Studio
-      {props.isLocked && <span className="sr-only"> (fora do seu plano)</span>}
+      {props.isLocked && <span className="sr-only"> (sem acesso)</span>}
     </Link>
   );
 }
@@ -199,7 +199,7 @@ export default async function ProductPage(
 ): Promise<ReactElement> {
   const { user, isAllowed } = await checkToolAccess("radar");
 
-  if (!isAllowed) return <LockedTool tool="radar" plan={user.plan} />;
+  if (!isAllowed) return <LockedTool />;
 
   const { id } = await props.params;
   const product = await getProductDetail({

@@ -9,16 +9,12 @@ import {
 } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { PAID_PLAN_IDS, PLANS } from "@/features/plans/plans";
 import { useIsClient } from "@/lib/use-is-client";
 import {
   grantAccessByEmail,
   revokeAccessByEmail,
 } from "../access-grant-actions";
 import { describeGrantedCount } from "../email-list";
-
-const SELECT_CLASS =
-  "h-11 rounded-lg border border-input bg-transparent px-2 text-sm text-foreground";
 
 export function GrantAccessForm(): ReactElement {
   const [isPending, startTransition] = useTransition();
@@ -34,7 +30,6 @@ export function GrantAccessForm(): ReactElement {
     startTransition(async () => {
       const result = await grantAccessByEmail({
         emails: data.get("emails"),
-        plan: data.get("plan"),
       });
 
       if (result.ok === false) {
@@ -66,18 +61,6 @@ export function GrantAccessForm(): ReactElement {
         className="w-full rounded-lg border border-input bg-transparent px-3 py-2 text-base outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
       />
       <div className="flex gap-2">
-        <select
-          name="plan"
-          aria-label="Plano que eles ganham"
-          defaultValue="completo"
-          className={`${SELECT_CLASS} flex-1 sm:flex-none`}
-        >
-          {PAID_PLAN_IDS.map((plan) => (
-            <option key={plan} value={plan}>
-              {PLANS[plan].label}
-            </option>
-          ))}
-        </select>
         <Button
           type="submit"
           className="h-11"
@@ -103,7 +86,7 @@ export function RevokeAccessButton(props: { email: string }): ReactElement {
 
   function revoke(): void {
     const confirmed = window.confirm(
-      `Tirar o acesso de ${props.email}? A conta perde o plano liberado aqui.`,
+      `Tirar o acesso de ${props.email}? A conta perde o acesso liberado aqui.`,
     );
 
     if (confirmed === false) return;

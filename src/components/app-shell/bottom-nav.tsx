@@ -38,9 +38,7 @@ export function BottomNav(props: {
             key={item.href}
             href={item.href}
             aria-current={isActive ? "page" : undefined}
-            aria-label={
-              isLocked ? `${item.label} (fora do seu plano)` : undefined
-            }
+            aria-label={isLocked ? `${item.label} (sem acesso)` : undefined}
             className={cn(
               "flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-medium",
               isActive && "bg-sidebar-accent text-sidebar-accent-foreground",

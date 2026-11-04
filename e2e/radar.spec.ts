@@ -16,7 +16,7 @@ const productLinks = (page: Page) =>
 test("o Radar mostra a lista com ganho por venda e concorrência", async ({
   page,
 }, testInfo) => {
-  await signUp(page, uniqueEmail(testInfo.title), "radar");
+  await signUp(page, uniqueEmail(testInfo.title), "full");
 
   await expect(page.getByText(/40 produtos/)).toBeVisible();
   await expect(productLinks(page).first()).toContainText("Você ganha R$");
@@ -26,7 +26,7 @@ test("o Radar mostra a lista com ganho por venda e concorrência", async ({
 test("filtrar por concorrência baixa deixa só produtos com até 50 afiliados", async ({
   page,
 }, testInfo) => {
-  await signUp(page, uniqueEmail(testInfo.title), "radar");
+  await signUp(page, uniqueEmail(testInfo.title), "full");
   const isPhone = (page.viewportSize()?.width ?? 0) < 768;
 
   if (isPhone) await page.getByRole("button", { name: /^Filtros/ }).click();
@@ -47,7 +47,7 @@ test("filtrar por concorrência baixa deixa só produtos com até 50 afiliados",
 test("buscar sem resultado mostra como sair do filtro", async ({
   page,
 }, testInfo) => {
-  await signUp(page, uniqueEmail(testInfo.title), "radar");
+  await signUp(page, uniqueEmail(testInfo.title), "full");
 
   await page
     .getByRole("searchbox", { name: "Buscar produto" })
@@ -66,7 +66,7 @@ test("buscar sem resultado mostra como sair do filtro", async ({
 test("a ficha do produto mostra ganho, concorrência, nota e o link da Shopee", async ({
   page,
 }, testInfo) => {
-  await signUp(page, uniqueEmail(testInfo.title), "radar");
+  await signUp(page, uniqueEmail(testInfo.title), "full");
 
   await productLinks(page).first().click();
   await expect(page).toHaveURL(/\/radar\/demo-\d+$/, {
@@ -89,7 +89,7 @@ test("a ficha do produto mostra ganho, concorrência, nota e o link da Shopee", 
 test("trocar a comissão para 8% aumenta o ganho mostrado", async ({
   page,
 }, testInfo) => {
-  await signUp(page, uniqueEmail(testInfo.title), "radar");
+  await signUp(page, uniqueEmail(testInfo.title), "full");
   await page.goto("/radar/demo-027");
   const at3 = await page.getByText(/% \(Shopee 3%/).innerText();
 

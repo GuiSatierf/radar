@@ -8,9 +8,9 @@ import { checkToolAccess } from "@/lib/session";
 export const metadata: Metadata = { title: "Creators" };
 
 export default async function CreatorsPage(): Promise<ReactElement> {
-  const { user, isAllowed } = await checkToolAccess("creators");
+  const { isAllowed } = await checkToolAccess("creators");
 
-  if (!isAllowed) return <LockedTool tool="creators" plan={user.plan} />;
+  if (!isAllowed) return <LockedTool />;
 
   return (
     <ComingSoon

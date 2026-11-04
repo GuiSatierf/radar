@@ -44,15 +44,15 @@ test("conta nova vê as ferramentas fechadas, com cadeado no menu", async ({
   await signUp(page, uniqueEmail(testInfo.title));
 
   await expect(
-    page.getByRole("heading", { name: "Sua conta ainda não tem um plano" }),
+    page.getByRole("heading", { name: "Sua conta ainda não tem acesso" }),
   ).toBeVisible();
   await expect(
-    toolsMenu(page).getByRole("link", { name: "Radar (fora do seu plano)" }),
+    toolsMenu(page).getByRole("link", { name: "Radar (sem acesso)" }),
   ).toBeVisible();
   await expect(page.getByText(/\d+ produtos/)).toHaveCount(0);
 });
 
-test("sem plano, a ficha do produto também fica fechada, mesmo abrindo o link direto", async ({
+test("sem acesso, a ficha do produto também fica fechada, mesmo abrindo o link direto", async ({
   page,
 }, testInfo) => {
   await signUp(page, uniqueEmail(testInfo.title));
@@ -60,34 +60,33 @@ test("sem plano, a ficha do produto também fica fechada, mesmo abrindo o link d
   await page.goto(`/radar/${await firstProductId()}`);
 
   await expect(
-    page.getByRole("heading", { name: "Sua conta ainda não tem um plano" }),
+    page.getByRole("heading", { name: "Sua conta ainda não tem acesso" }),
   ).toBeVisible();
   await expect(page.getByText("Você ganha")).toHaveCount(0);
 });
 
-test("o plano Radar abre o Radar e fecha o Studio, até chamando a página direto", async ({
+test("com acesso, todas as ferramentas abrem, até chamando a página direto", async ({
   page,
 }, testInfo) => {
-  await signUp(page, uniqueEmail(testInfo.title), "radar");
+  await signUp(page, uniqueEmail(testInfo.title), "full");
 
   await expect(page.getByText(/\d+ produtos/)).toBeVisible();
   await expect(
-    toolsMenu(page).getByRole("link", { name: "Studio (fora do seu plano)" }),
-  ).toBeVisible();
+    toolsMenu(page).getByRole("link", { name: /sem acesso/ }),
+  ).toHaveCount(0);
 
   await page.goto("/studio");
 
   await expect(
-    page.getByRole("heading", { name: "Studio não está no seu plano" }),
+    page.getByRole("heading", { name: "Criar vídeo" }),
   ).toBeVisible();
-  await expect(page.getByText("Faz parte do plano Completo.")).toBeVisible();
 });
 
 test("quem não é admin não acha a página do admin, e a API do admin recusa", async ({
   page,
 }, testInfo) => {
   const email = uniqueEmail(testInfo.title);
-  await signUp(page, email, "radar");
+  await signUp(page, email, "full");
   const origin = new URL(page.url()).origin;
 
   const adminPage = await page.goto("/admin");
@@ -107,7 +106,7 @@ test("quem não é admin não acha a página do admin, e a API do admin recusa",
   ).toHaveCount(0);
 });
 
-test("ninguém troca o próprio plano pela API de conta", async ({
+test("ninguém libera o próprio acesso pela API de conta", async ({
   page,
 }, testInfo) => {
   const email = uniqueEmail(testInfo.title);
@@ -115,13 +114,13 @@ test("ninguém troca o próprio plano pela API de conta", async ({
 
   await page.request.post("/api/auth/update-user", {
     headers: { origin: new URL(page.url()).origin },
-    data: { plan: "pro", name: "Maria Teste" },
+    data: { plan: "full", name: "Maria Teste" },
   });
 
   expect(await planOf(email)).toBe("none");
 });
 
-test("o admin troca o plano de alguém, e a conta bloqueada sai e não entra mais", async ({
+test("o admin libera o acesso de alguém, e a conta bloqueada sai e não entra mais", async ({
   page,
   browser,
 }, testInfo) => {
@@ -143,9 +142,9 @@ test("o admin troca o plano de alguém, e a conta bloqueada sai e não entra mai
   });
 
   await page
-    .getByRole("combobox", { name: "Plano de Maria Teste" })
-    .selectOption("completo");
-  await expect(page.getByText("Maria Teste: plano Completo")).toBeVisible();
+    .getByRole("button", { name: "Liberar acesso de Maria Teste" })
+    .click();
+  await expect(page.getByText("Acesso de Maria Teste liberado.")).toBeVisible();
 
   await subscriber.goto("/studio");
   await expect(
@@ -170,7 +169,7 @@ test("o admin troca o plano de alguém, e a conta bloqueada sai e não entra mai
   await subscriber.context().close();
 });
 
-test("o admin vê de onde veio o plano e os avisos da Hotmart", async ({
+test("o admin vê de onde veio o acesso e os avisos da Hotmart", async ({
   page,
   browser,
 }, testInfo) => {
@@ -180,7 +179,7 @@ test("o admin vê de onde veio o plano e os avisos da Hotmart", async ({
     await db.insert(hotmartAccess).values({
       email: buyerEmail,
       productId: "e2e-produto",
-      plan: "radar",
+      plan: "full",
       endsAt: null,
       lastEventAt: new Date(),
     });
@@ -192,7 +191,7 @@ test("o admin vê de onde veio o plano e os avisos da Hotmart", async ({
     });
   });
   const buyer = await openAsNewVisitor(browser);
-  // Bought before signing up: the Hotmart plan arrives once she confirms the e-mail.
+  // Bought before signing up: the Hotmart access arrives once she confirms the e-mail.
   await signUp(buyer, buyerEmail);
   await buyer.goto(await confirmationLinkFor(buyerEmail));
   await expect(buyer).toHaveURL(/email=confirmado/, {
@@ -205,16 +204,17 @@ test("o admin vê de onde veio o plano e os avisos da Hotmart", async ({
   await makeAdmin(adminEmail);
   await page.goto(`/admin?busca=${encodeURIComponent(buyerEmail)}`);
 
-  await expect(page.getByText("Plano pela Hotmart")).toBeVisible({
+  await expect(page.getByText("Acesso pela Hotmart")).toBeVisible({
     timeout: NAVIGATION_TIMEOUT,
   });
 
+  page.once("dialog", (dialog) => dialog.accept());
   await page
-    .getByRole("combobox", { name: "Plano de Maria Teste" })
-    .selectOption("pro");
-  await expect(page.getByText("Maria Teste: plano Pro")).toBeVisible();
+    .getByRole("button", { name: "Tirar acesso de Maria Teste" })
+    .click();
+  await expect(page.getByText("Acesso de Maria Teste tirado.")).toBeVisible();
   await page.reload();
-  await expect(page.getByText("Plano mudado pelo admin")).toBeVisible();
+  await expect(page.getByText("Acesso mudado pelo admin")).toBeVisible();
 
   await page
     .getByRole("navigation", { name: "Áreas do admin" })
@@ -223,5 +223,5 @@ test("o admin vê de onde veio o plano e os avisos da Hotmart", async ({
   await expect(
     page.getByRole("heading", { name: "Avisos da Hotmart" }),
   ).toBeVisible({ timeout: NAVIGATION_TIMEOUT });
-  await expect(page.getByText("Plano liberado").first()).toBeVisible();
+  await expect(page.getByText("Acesso liberado").first()).toBeVisible();
 });

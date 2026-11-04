@@ -66,8 +66,8 @@ export default async function SettingsPage(): Promise<ReactElement> {
       </SettingsRow>
 
       <SettingsRow
-        title="Plano"
-        description={`${PLANS[user.plan].description} Para mudar de plano, fale com o suporte.`}
+        title="Acesso"
+        description={`${PLANS[user.plan].description} Dúvidas sobre o acesso, fale com o suporte.`}
       >
         <span className="text-sm font-medium">{PLANS[user.plan].label}</span>
       </SettingsRow>

@@ -1,55 +1,41 @@
 import { describe, expect, it } from "vitest";
 import { canUseTool, listLockedTools } from "./access";
-import { cheapestPlanWith, isPlanId, PLANS, TOOLS } from "./plans";
+import { isPlanId, PLANS, TOOLS } from "./plans";
 
-const subscriber = (plan: "none" | "radar" | "completo" | "pro") => ({
+const subscriber = (plan: "none" | "full") => ({
   plan,
   isAdmin: false,
 });
 
-describe("acesso por plano", () => {
-  it("deve fechar todas as ferramentas para quem ainda não tem plano", () => {
+describe("acesso às ferramentas", () => {
+  it("deve fechar todas as ferramentas para quem ainda não tem acesso", () => {
     expect(listLockedTools(subscriber("none"))).toEqual([...TOOLS]);
   });
 
-  it("deve abrir só Radar, Rankings e Anúncios no plano Radar", () => {
-    const plan = subscriber("radar");
+  it("deve abrir todas as ferramentas para quem tem acesso", () => {
+    const access = subscriber("full");
 
-    expect(TOOLS.filter((tool) => canUseTool(plan, tool))).toEqual([
-      "radar",
-      "rankings",
-      "anuncios",
+    expect(TOOLS.filter((tool) => canUseTool(access, tool))).toEqual([
+      ...TOOLS,
     ]);
-    expect(listLockedTools(plan)).toEqual(["creators", "studio"]);
+    expect(listLockedTools(access)).toEqual([]);
   });
 
-  it("deve abrir tudo nos planos Completo e Pro", () => {
-    expect(listLockedTools(subscriber("completo"))).toEqual([]);
-    expect(listLockedTools(subscriber("pro"))).toEqual([]);
-  });
-
-  it("deve abrir tudo para o admin, mesmo sem plano", () => {
+  it("deve abrir tudo para o admin, mesmo sem acesso liberado", () => {
     expect(listLockedTools({ plan: "none", isAdmin: true })).toEqual([]);
   });
 });
 
-describe("planos", () => {
-  it("deve indicar o plano mais barato que tem a ferramenta", () => {
-    expect(cheapestPlanWith("rankings")?.id).toBe("radar");
-    expect(cheapestPlanWith("studio")?.id).toBe("completo");
-  });
-
-  it("deve aceitar só os planos que existem", () => {
-    expect(isPlanId("pro")).toBe(true);
-    expect(isPlanId("ouro")).toBe(false);
+describe("tipos de acesso", () => {
+  it("deve aceitar só os acessos que existem, e não os planos antigos", () => {
+    expect(isPlanId("full")).toBe(true);
+    expect(isPlanId("pro")).toBe(false);
+    expect(isPlanId("radar")).toBe(false);
     expect(isPlanId(null)).toBe(false);
   });
 
-  it("deve ter mais vídeos no Pro que no Completo, e nenhum sem Studio", () => {
-    expect(PLANS.pro.monthlyVideos).toBeGreaterThan(
-      PLANS.completo.monthlyVideos,
-    );
-    expect(PLANS.radar.monthlyVideos).toBe(0);
+  it("deve ter vídeos só para quem tem acesso", () => {
+    expect(PLANS.full.monthlyVideos).toBeGreaterThan(0);
     expect(PLANS.none.monthlyVideos).toBe(0);
   });
 });

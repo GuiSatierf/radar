@@ -89,7 +89,7 @@ describe("getCurrentUser", () => {
             name: "Bia",
             email: "b@e.test",
             commissionProfile: 3,
-            plan: "pro",
+            plan: "full",
             role: "user",
           },
         }),
@@ -99,7 +99,7 @@ describe("getCurrentUser", () => {
 
     const user = await getCurrentUser();
 
-    expect(user?.plan).toBe("pro");
+    expect(user?.plan).toBe("full");
     expect(user?.isAdmin).toBe(false);
   });
 });

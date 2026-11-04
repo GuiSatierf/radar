@@ -67,9 +67,9 @@ describe("setPlanByEmail", () => {
     await insertUser("demo@loja.test");
     await insertUser("cliente@loja.test");
 
-    await setPlanByEmail(db, "demo@loja.test", "pro");
+    await setPlanByEmail(db, "demo@loja.test", "full");
 
-    expect((await find("demo@loja.test"))?.plan).toBe("pro");
+    expect((await find("demo@loja.test"))?.plan).toBe("full");
     expect((await find("cliente@loja.test"))?.plan).toBe("none");
   });
 });

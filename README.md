@@ -15,7 +15,7 @@ O `npm run local` cria o `.env`, sobe o banco, aplica as migrações, cria a con
 
 A conta de demonstração fica no `.env`, nas variáveis `SEED_DEMO_EMAIL` e `SEED_DEMO_PASSWORD`. Também dá para criar uma conta nova pela tela.
 
-A conta de demonstração tem o plano Pro e é admin (`ADMIN_EMAIL` no `.env`). Para ver as ferramentas fechadas, crie outra conta pela tela: conta nova começa sem plano.
+A conta de demonstração tem acesso e é admin (`ADMIN_EMAIL` no `.env`). Para ver as ferramentas fechadas, crie outra conta pela tela: conta nova começa sem acesso.
 
 Nas próximas vezes, basta `npm run dev`.
 
@@ -38,7 +38,7 @@ Nas próximas vezes, basta `npm run dev`.
 - Build pelo `Dockerfile`. O container aplica as migrações ao subir e responde em `/api/health`.
 - Cada ambiente (demonstração e produção) tem app, banco Postgres e variáveis próprios.
 - As variáveis estão no `.env.example`. Em produção, gere um `BETTER_AUTH_SECRET` novo e aponte o `BETTER_AUTH_URL` para o endereço público.
-- Admin: depois de criar a conta pela tela, coloque o e-mail dela em `ADMIN_EMAIL` e reinicie o app. A área `/admin` muda o plano de cada pessoa, bloqueia contas e cadastra os anúncios da tela Anúncios (curadoria manual pela biblioteca de anúncios da Meta). O link de "Falar com o suporte" vem de `SUPPORT_URL`.
+- Admin: depois de criar a conta pela tela, coloque o e-mail dela em `ADMIN_EMAIL` e reinicie o app. A área `/admin` libera ou tira o acesso de cada pessoa, bloqueia contas e cadastra os anúncios da tela Anúncios (curadoria manual pela biblioteca de anúncios da Meta). O link de "Falar com o suporte" vem de `SUPPORT_URL`.
 - Coletas diárias de produtos e de anúncios: defina `CRON_SECRET` e crie duas tarefas agendadas no Coolify, uma vez por dia cada:
 
 ```bash

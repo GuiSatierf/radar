@@ -1,7 +1,7 @@
 /**
- * Plans and what each one opens. PROVISIONAL: names, tools and video limits wait for the client's
- * decision (prices and payment too). Everything about plans lives here, so changing them later
- * touches no screen.
+ * Access to the tools. There are no plans to choose from: an account either has access to every
+ * tool (a Hotmart purchase or an admin unlocked it) or has none yet. Everything about it lives
+ * here, so changing it later touches no screen.
  */
 export const TOOLS = [
   "radar",
@@ -12,12 +12,13 @@ export const TOOLS = [
 ] as const;
 export type Tool = (typeof TOOLS)[number];
 
-export const PLAN_IDS = ["none", "radar", "completo", "pro"] as const;
+/** "none" first: a later index is more access (the billing code ranks by it). */
+export const PLAN_IDS = ["none", "full"] as const;
 export type PlanId = (typeof PLAN_IDS)[number];
 
 export const DEFAULT_PLAN: PlanId = "none";
-/** Every plan except "no plan": what a purchase can unlock. */
-export const PAID_PLAN_IDS = PLAN_IDS.filter((id) => id !== DEFAULT_PLAN);
+/** The access a purchase or an admin unlocks. */
+export const FULL_ACCESS: PlanId = "full";
 
 export interface Plan {
   readonly id: PlanId;
@@ -33,36 +34,19 @@ const ALL_TOOLS: readonly Tool[] = TOOLS;
 export const PLANS: Readonly<Record<PlanId, Plan>> = {
   none: {
     id: "none",
-    label: "Sem plano",
-    description: "A conta foi criada, mas ainda não tem um plano liberado.",
+    label: "Sem acesso",
+    description: "A conta foi criada, mas o acesso ainda não foi liberado.",
     tools: [],
     monthlyVideos: 0,
   },
-  radar: {
-    id: "radar",
-    label: "Radar",
-    description: "Radar, Rankings e Anúncios, sem criar vídeos.",
-    tools: ["radar", "rankings", "anuncios"],
-    monthlyVideos: 0,
-  },
-  completo: {
-    id: "completo",
-    label: "Completo",
+  full: {
+    id: "full",
+    label: "Com acesso",
     description: "Todas as ferramentas, com 12 vídeos por mês.",
     tools: ALL_TOOLS,
     monthlyVideos: 12,
   },
-  pro: {
-    id: "pro",
-    label: "Pro",
-    description: "Todas as ferramentas, com 30 vídeos por mês.",
-    tools: ALL_TOOLS,
-    monthlyVideos: 30,
-  },
 };
-
-/** From the cheapest up: the first plan that has a tool is the one the locked screen names. */
-const PLANS_IN_ORDER: readonly PlanId[] = ["radar", "completo", "pro"];
 
 export function isPlanId(value: unknown): value is PlanId {
   return PLAN_IDS.some((id) => id === value);
@@ -70,12 +54,4 @@ export function isPlanId(value: unknown): value is PlanId {
 
 export function planIncludesTool(planId: PlanId, tool: Tool): boolean {
   return PLANS[planId].tools.includes(tool);
-}
-
-export function cheapestPlanWith(tool: Tool): Plan | null {
-  const id = PLANS_IN_ORDER.find((planId) => planIncludesTool(planId, tool));
-
-  if (id == null) return null;
-
-  return PLANS[id];
 }

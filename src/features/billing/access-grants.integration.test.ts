@@ -57,19 +57,19 @@ afterAll(async () => {
 
 describe("acesso liberado por e-mail", () => {
   it("deve dar o plano ao confirmar o e-mail para quem foi liberado antes de criar a conta", async () => {
-    await grantAccess(db, { emails: [EMAIL], plan: "completo" }, NOW);
+    await grantAccess(db, { emails: [EMAIL], plan: "full" }, NOW);
     await signUpWithoutConfirming();
     expect(await planOf(EMAIL)).toBe("none");
 
     await confirmEmail(auth, sender.sent, EMAIL, PASSWORD);
 
-    expect(await planOf(EMAIL)).toBe("completo");
+    expect(await planOf(EMAIL)).toBe("full");
   });
 
   it("não deve dar o plano liberado a quem criou a conta com o e-mail e não confirmou", async () => {
     await signUpWithoutConfirming();
 
-    await grantAccess(db, { emails: [EMAIL], plan: "completo" }, NOW);
+    await grantAccess(db, { emails: [EMAIL], plan: "full" }, NOW);
 
     expect(await planOf(EMAIL)).toBe("none");
   });
@@ -77,11 +77,8 @@ describe("acesso liberado por e-mail", () => {
   it("deve tirar o plano ao remover a liberação, mesmo de quem não confirmou o e-mail", async () => {
     // Accounts from before the confirmation existed got the plan without confirming.
     await signUpWithoutConfirming();
-    await grantAccess(db, { emails: [EMAIL], plan: "completo" }, NOW);
-    await db
-      .update(user)
-      .set({ plan: "completo" })
-      .where(eq(user.email, EMAIL));
+    await grantAccess(db, { emails: [EMAIL], plan: "full" }, NOW);
+    await db.update(user).set({ plan: "full" }).where(eq(user.email, EMAIL));
 
     await revokeAccess(db, EMAIL, NOW);
 
@@ -91,24 +88,24 @@ describe("acesso liberado por e-mail", () => {
   it("deve mudar na hora o plano de quem já tem conta", async () => {
     await signUp();
 
-    await grantAccess(db, { emails: [EMAIL, OTHER_EMAIL], plan: "pro" }, NOW);
+    await grantAccess(db, { emails: [EMAIL, OTHER_EMAIL], plan: "full" }, NOW);
 
-    expect(await planOf(EMAIL)).toBe("pro");
+    expect(await planOf(EMAIL)).toBe("full");
   });
 
-  it("deve trocar o plano quando o mesmo e-mail é liberado de novo", async () => {
+  it("não deve repetir o e-mail liberado de novo", async () => {
     await signUp();
-    await grantAccess(db, { emails: [EMAIL], plan: "pro" }, NOW);
+    await grantAccess(db, { emails: [EMAIL], plan: "full" }, NOW);
 
-    await grantAccess(db, { emails: [EMAIL], plan: "radar" }, NOW);
+    await grantAccess(db, { emails: [EMAIL], plan: "full" }, NOW);
 
-    expect(await planOf(EMAIL)).toBe("radar");
+    expect(await planOf(EMAIL)).toBe("full");
     expect(await db.select().from(accessGrant)).toHaveLength(1);
   });
 
   it("deve voltar para sem plano quando o acesso é tirado", async () => {
     await signUp();
-    await grantAccess(db, { emails: [EMAIL], plan: "completo" }, NOW);
+    await grantAccess(db, { emails: [EMAIL], plan: "full" }, NOW);
 
     const removed = await revokeAccess(db, EMAIL, NOW);
 
@@ -122,16 +119,16 @@ describe("acesso liberado por e-mail", () => {
       kind: "grant",
       email: EMAIL,
       productId: "123",
-      plan: "radar",
+      plan: "full",
       renewsAccess: true,
       at: NOW,
     });
-    await grantAccess(db, { emails: [EMAIL], plan: "pro" }, NOW);
-    expect(await planOf(EMAIL)).toBe("pro");
+    await grantAccess(db, { emails: [EMAIL], plan: "full" }, NOW);
+    expect(await planOf(EMAIL)).toBe("full");
 
     await revokeAccess(db, EMAIL, NOW);
 
-    expect(await planOf(EMAIL)).toBe("radar");
+    expect(await planOf(EMAIL)).toBe("full");
   });
 
   it("deve dizer que não tirou nada quando o e-mail não estava na lista", async () => {
@@ -140,13 +137,13 @@ describe("acesso liberado por e-mail", () => {
 
   it("deve listar os e-mails dizendo quem já criou a conta", async () => {
     await signUp("Aluna@Teste.test");
-    await grantAccess(db, { emails: [EMAIL, OTHER_EMAIL], plan: "radar" }, NOW);
+    await grantAccess(db, { emails: [EMAIL, OTHER_EMAIL], plan: "full" }, NOW);
 
     const rows = await listAccessGrants(db);
 
     expect(rows).toEqual([
-      { email: EMAIL, plan: "radar", createdAt: NOW, hasAccount: true },
-      { email: OTHER_EMAIL, plan: "radar", createdAt: NOW, hasAccount: false },
+      { email: EMAIL, plan: "full", createdAt: NOW, hasAccount: true },
+      { email: OTHER_EMAIL, plan: "full", createdAt: NOW, hasAccount: false },
     ]);
   });
 });

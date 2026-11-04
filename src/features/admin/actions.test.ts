@@ -46,7 +46,7 @@ describe("quem não é admin", () => {
     getCurrentUserMock.mockResolvedValue(subscriber);
     const db = fakeDatabase([{ id: "u1" }]);
 
-    const result = await changeUserPlan({ userId: "u1", plan: "pro" });
+    const result = await changeUserPlan({ userId: "u1", plan: "full" });
 
     expect(result.ok).toBe(false);
     expect(db.update).not.toHaveBeenCalled();
@@ -71,7 +71,7 @@ describe("admin", () => {
   it("deve trocar o plano para um que existe", async () => {
     const db = fakeDatabase([{ id: "u1" }]);
 
-    const result = await changeUserPlan({ userId: "u1", plan: "completo" });
+    const result = await changeUserPlan({ userId: "u1", plan: "full" });
 
     expect(result).toEqual({ ok: true });
     expect(db.update).toHaveBeenCalledTimes(1);
@@ -89,7 +89,7 @@ describe("admin", () => {
   it("deve avisar quando a conta não existe mais", async () => {
     fakeDatabase([]);
 
-    const result = await changeUserPlan({ userId: "sumiu", plan: "pro" });
+    const result = await changeUserPlan({ userId: "sumiu", plan: "full" });
 
     expect(result).toMatchObject({ ok: false, message: /não existe/ });
   });

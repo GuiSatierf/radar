@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { HotmartIdKind } from "@/features/billing/hotmart/plan-mapping";
-import { PAID_PLAN_IDS, PLANS } from "@/features/plans/plans";
 import { useIsClient } from "@/lib/use-is-client";
 import { cn } from "@/lib/utils";
 import {
@@ -107,7 +106,6 @@ export function AddPlanForm(): ReactElement {
       const result = await addHotmartPlan({
         kind: data.get("kind"),
         hotmartId: data.get("hotmartId"),
-        plan: data.get("plan"),
       });
 
       if (result.ok === false) {
@@ -124,7 +122,7 @@ export function AddPlanForm(): ReactElement {
     <form
       method="post"
       onSubmit={handleSubmit}
-      className="grid grid-cols-2 gap-2 sm:grid-cols-[auto_1fr_auto_auto]"
+      className="grid grid-cols-2 gap-2 sm:grid-cols-[auto_1fr_auto]"
     >
       <select
         name="kind"
@@ -145,18 +143,6 @@ export function AddPlanForm(): ReactElement {
         placeholder="Código, ex.: 460805"
         className="h-11 text-base"
       />
-      <select
-        name="plan"
-        aria-label="Plano que ele libera"
-        defaultValue="radar"
-        className={SELECT_CLASS}
-      >
-        {PAID_PLAN_IDS.map((plan) => (
-          <option key={plan} value={plan}>
-            {PLANS[plan].label}
-          </option>
-        ))}
-      </select>
       <Button
         type="submit"
         variant="outline"
@@ -179,7 +165,7 @@ export function RemovePlanButton(props: {
 
   function remove(): void {
     const confirmed = window.confirm(
-      `Tirar ${name}? Compras dele param de liberar plano.`,
+      `Tirar ${name}? Compras dele param de liberar o acesso.`,
     );
 
     if (confirmed === false) return;
@@ -244,7 +230,7 @@ export function UnlockSwitch(props: {
       type="button"
       role="switch"
       aria-checked={props.isOn}
-      aria-label="Liberar os planos sozinho"
+      aria-label="Liberar o acesso sozinho"
       disabled={isPending}
       onClick={toggle}
       className="flex min-h-11 items-center gap-3 self-start rounded-lg text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-60"

@@ -15,19 +15,19 @@ const EVENT_LABELS: Readonly<Record<string, string>> = {
   PURCHASE_CANCELED: "Compra cancelada",
   PURCHASE_EXPIRED: "Compra expirada",
   SUBSCRIPTION_CANCELLATION: "Assinatura cancelada",
-  SWITCH_PLAN: "Troca de plano",
+  SWITCH_PLAN: "Troca de plano na Hotmart",
 };
 
 // Keys are the details the webhook stores (src/features/billing/hotmart).
 const APPLIED_LABELS: Readonly<Record<string, string>> = {
-  grant: "Plano liberado",
+  grant: "Acesso liberado",
   end: "Fim do acesso marcado",
 };
 
 const MISSING_DATA = "Aviso sem produto ou e-mail";
 
 const IGNORED_LABELS: Readonly<Record<string, string>> = {
-  "product not mapped to a plan": "Produto que não libera plano",
+  "product not mapped to a plan": "Produto que não libera acesso",
   "purchase without product or buyer e-mail": MISSING_DATA,
   "cancellation without product or e-mail": MISSING_DATA,
   "plan switch without product or e-mail": MISSING_DATA,

@@ -25,7 +25,6 @@ import {
   getHotmartSettings,
   listHotmartPlanRows,
 } from "@/features/billing/hotmart/settings";
-import { PLANS } from "@/features/plans/plans";
 import { formatUpdatedAt } from "@/features/radar/domain/format";
 import { getServerEnv } from "@/lib/env";
 import { requireAdmin } from "@/lib/session";
@@ -54,7 +53,8 @@ function PlanRows(props: { rows: HotmartPlanRow[] }): ReactElement {
   if (props.rows.length === 0)
     return (
       <p className="text-sm text-muted-foreground">
-        Nenhum produto ainda. Sem isso, as compras chegam mas não liberam plano.
+        Nenhum produto ainda. Sem isso, as compras chegam mas não liberam
+        acesso.
       </p>
     );
 
@@ -69,7 +69,6 @@ function PlanRows(props: { rows: HotmartPlanRow[] }): ReactElement {
             {HOTMART_KIND_LABEL[row.kind]}
           </span>
           <span className="flex-1 font-mono">{row.hotmartId}</span>
-          <span className="font-medium">{PLANS[row.plan].label}</span>
           <RemovePlanButton kind={row.kind} hotmartId={row.hotmartId} />
         </li>
       ))}
@@ -107,9 +106,9 @@ function describeHottok(savedAt: Date | null): string {
 
 function describeUnlocking(unlocksPlansAt: Date | null): string {
   if (unlocksPlansAt == null)
-    return "Os avisos ficam registrados, mas ninguém ganha plano sozinho. Libere à mão em Contas. Ligar não vale para quem comprou antes.";
+    return "Os avisos ficam registrados, mas ninguém ganha acesso sozinho. Libere à mão em Contas. Ligar não vale para quem comprou antes.";
 
-  return "Quem compra e confirma o e-mail ganha o plano na hora. Cancelamento e reembolso tiram o plano.";
+  return "Quem compra e confirma o e-mail ganha o acesso na hora. Cancelamento e reembolso tiram o acesso.";
 }
 
 export default async function AdminHotmartPage(): Promise<ReactElement> {
@@ -150,15 +149,15 @@ export default async function AdminHotmartPage(): Promise<ReactElement> {
         </SetupStep>
 
         <SetupStep
-          title="3 · Qual produto libera qual plano"
-          hint="Quando uma compra tem os dois, vale a linha da assinatura."
+          title="3 · Quais produtos liberam o acesso"
+          hint="Uma linha para cada assinatura ou produto vendido na Hotmart."
         >
           <PlanRows rows={planRows} />
           <AddPlanForm />
         </SetupStep>
 
         <SetupStep
-          title="4 · Liberar os planos sozinho"
+          title="4 · Liberar o acesso sozinho"
           hint={describeUnlocking(unlocksPlansAt)}
         >
           <UnlockSwitch

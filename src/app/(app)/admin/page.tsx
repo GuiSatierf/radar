@@ -10,8 +10,8 @@ import {
   StatCard,
 } from "@/features/admin/components/stat-cards";
 import {
+  AccessButton,
   BlockButton,
-  PlanSelect,
 } from "@/features/admin/components/user-controls";
 import { describeTotal } from "@/features/admin/describe-total";
 import {
@@ -25,6 +25,7 @@ import {
   listUsersForAdmin,
 } from "@/features/admin/queries";
 import { listRunningAccess } from "@/features/billing/access";
+import { FULL_ACCESS } from "@/features/plans/plans";
 import { formatInteger, formatUpdatedAt } from "@/features/radar/domain/format";
 import { requireAdmin } from "@/lib/session";
 
@@ -48,6 +49,9 @@ function UserItem(props: {
           <span className="truncate">{row.name}</span>
           {row.isAdmin && <Badge variant="secondary">Admin</Badge>}
           {row.isBlocked && <Badge variant="destructive">Bloqueada</Badge>}
+          {row.plan === FULL_ACCESS && (
+            <Badge variant="outline">Com acesso</Badge>
+          )}
         </p>
         <p className="truncate text-sm text-muted-foreground">{row.email}</p>
         <p className="text-xs text-muted-foreground">
@@ -57,7 +61,7 @@ function UserItem(props: {
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <PlanSelect userId={row.id} userName={row.name} plan={row.plan} />
+        <AccessButton userId={row.id} userName={row.name} plan={row.plan} />
         {canBlock && (
           <BlockButton
             userId={row.id}
