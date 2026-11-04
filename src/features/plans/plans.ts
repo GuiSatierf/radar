@@ -40,7 +40,7 @@ export const PLANS: Readonly<Record<PlanId, Plan>> = {
   },
   radar: {
     id: "radar",
-    label: "Radar",
+    label: "Radar de Criativos",
     description: "Radar, Rankings e Anúncios, sem criar vídeos.",
     tools: ["radar", "rankings", "anuncios"],
     monthlyVideos: 0,

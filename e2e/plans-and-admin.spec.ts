@@ -65,7 +65,7 @@ test("sem plano, a ficha do produto também fica fechada, mesmo abrindo o link d
   await expect(page.getByText("Você ganha")).toHaveCount(0);
 });
 
-test("o plano Radar abre o Radar e fecha o Studio, até chamando a página direto", async ({
+test("o plano Radar de Criativos abre o Radar e fecha o Studio, até chamando a página direto", async ({
   page,
 }, testInfo) => {
   await signUp(page, uniqueEmail(testInfo.title), "radar");
@@ -80,7 +80,11 @@ test("o plano Radar abre o Radar e fecha o Studio, até chamando a página diret
   await expect(
     page.getByRole("heading", { name: "Studio não está no seu plano" }),
   ).toBeVisible();
-  await expect(page.getByText("Faz parte do plano Completo.")).toBeVisible();
+  await expect(
+    page.getByText(
+      "Seu plano hoje é o Radar de Criativos. Faz parte do plano Completo.",
+    ),
+  ).toBeVisible();
 });
 
 test("quem não é admin não acha a página do admin, e a API do admin recusa", async ({
