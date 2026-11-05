@@ -45,7 +45,7 @@ export default async function AnunciosPage(
 ): Promise<ReactElement> {
   const { user, isAllowed } = await checkToolAccess("anuncios");
 
-  if (!isAllowed) return <LockedTool />;
+  if (isAllowed === false) return <LockedTool />;
 
   const filters = parseAdFilters(await props.searchParams);
   const db = getDatabase();

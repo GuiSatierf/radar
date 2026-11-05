@@ -199,7 +199,7 @@ export default async function ProductPage(
 ): Promise<ReactElement> {
   const { user, isAllowed } = await checkToolAccess("radar");
 
-  if (!isAllowed) return <LockedTool />;
+  if (isAllowed === false) return <LockedTool />;
 
   const { id } = await props.params;
   const product = await getProductDetail({

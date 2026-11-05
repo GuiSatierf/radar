@@ -57,7 +57,7 @@ export default async function StudioPage(
 ): Promise<ReactElement> {
   const { user, isAllowed } = await checkToolAccess("studio");
 
-  if (!isAllowed) return <LockedTool />;
+  if (isAllowed === false) return <LockedTool />;
 
   const productId = readProductId((await props.searchParams).produto);
   const db = getDatabase();

@@ -55,7 +55,7 @@ export default async function RankingsPage(
 ): Promise<ReactElement> {
   const { user, isAllowed } = await checkToolAccess("rankings");
 
-  if (!isAllowed) return <LockedTool />;
+  if (isAllowed === false) return <LockedTool />;
 
   const filters = parseRankingFilters(await props.searchParams);
   const [items, categories] = await Promise.all([

@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "Creators" };
 export default async function CreatorsPage(): Promise<ReactElement> {
   const { isAllowed } = await checkToolAccess("creators");
 
-  if (!isAllowed) return <LockedTool />;
+  if (isAllowed === false) return <LockedTool />;
 
   return (
     <ComingSoon
