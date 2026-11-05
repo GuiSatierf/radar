@@ -34,7 +34,12 @@ const MAX_KEY_LENGTH = 500;
 const KEY_PATTERN = /^\S+$/;
 
 const limitSchema = z.object({
-  count: z.coerce.number().int().min(0).max(MAX_VIDEOS_PER_PERIOD),
+  // A blank field must not become 0, which would turn the Studio off for everyone.
+  count: z
+    .string()
+    .trim()
+    .min(1)
+    .pipe(z.coerce.number<string>().int().min(0).max(MAX_VIDEOS_PER_PERIOD)),
   period: z.enum(VIDEO_LIMIT_PERIODS),
 });
 const providerSchema = z.object({ provider: z.enum(VIDEO_PROVIDER_IDS) });
@@ -162,10 +167,10 @@ export async function chooseVideoAi(
     return { ok: true };
   }
 
-  const [provider, model] = parsed.data.choice.split(":");
+  const [provider, model, ...extra] = parsed.data.choice.split(":");
   const known = VIDEO_PROVIDER_IDS.find((id) => id === provider);
 
-  if (known == null || model == null)
+  if (known == null || model == null || extra.length > 0)
     return { ok: false, message: "Escolha uma opção da lista." };
 
   const result = await chooseVideoModel(db, { provider: known, model }, now);
