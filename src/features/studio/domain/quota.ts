@@ -16,8 +16,8 @@ export interface VideoLimit {
   readonly period: VideoLimitPeriod;
 }
 
-/** What the Studio gave before the admin could change it: 12 videos a month. */
-export const DEFAULT_VIDEO_LIMIT: VideoLimit = { count: 12, period: "month" };
+/** The limit before the admin sets one: 20 videos a month. */
+export const DEFAULT_VIDEO_LIMIT: VideoLimit = { count: 20, period: "month" };
 
 const monthNameFormatter = new Intl.DateTimeFormat("pt-BR", {
   month: "long",

@@ -38,9 +38,9 @@ afterAll(async () => {
 });
 
 describe("limite de vídeos", () => {
-  it("deve começar com 12 vídeos por mês e o vídeo de exemplo", async () => {
+  it("deve começar com 20 vídeos por mês e o vídeo de exemplo", async () => {
     expect(await getVideoSettings(db)).toEqual({
-      limit: { count: 12, period: "month" },
+      limit: { count: 20, period: "month" },
       chosen: null,
     });
   });
@@ -62,7 +62,7 @@ describe("limite de vídeos", () => {
       .values({ id: 1, limitCount: 3, limitPeriod: "ano" });
 
     expect((await getVideoSettings(db)).limit).toEqual({
-      count: 12,
+      count: 20,
       period: "month",
     });
   });
@@ -131,7 +131,7 @@ describe("IA escolhida", () => {
     await chooseVideoModel(db, GOOGLE_MODEL, NOW);
 
     expect(await getVideoSettings(db)).toEqual({
-      limit: { count: 12, period: "month" },
+      limit: { count: 20, period: "month" },
       chosen: GOOGLE_MODEL,
     });
   });

@@ -86,7 +86,7 @@ describe("createVideo", () => {
 
   it("deve explicar quando os vídeos do mês acabaram", async () => {
     signedInAs("full");
-    const monthlyVideos = 12;
+    const monthlyVideos = 20;
     await db.insert(studioVideo).values(
       Array.from({ length: monthlyVideos }, (_, index) => ({
         id: `used-${index}`,
@@ -102,7 +102,7 @@ describe("createVideo", () => {
 
     expect(result.ok).toBe(false);
     expect(result.ok === false && result.message).toContain(
-      "Você usou os 12 vídeos deste mês",
+      "Você usou os 20 vídeos deste mês",
     );
   });
 });

@@ -49,7 +49,7 @@ function readChosen(
   return { provider, model };
 }
 
-/** The admin's settings, or the defaults (12 videos a month, sample video) before any change. */
+/** The admin's settings, or the defaults (20 videos a month, sample video) before any change. */
 export async function getVideoSettings(db: Database): Promise<VideoSettings> {
   const [row] = await db
     .select({
