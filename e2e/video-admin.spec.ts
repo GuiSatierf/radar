@@ -35,7 +35,9 @@ test("o admin salva o limite de vídeos e a chave de uma IA pela tela", async ({
     .click();
   await expect(page.getByText("Limite de vídeos salvo")).toBeVisible();
 
-  const keyField = page.getByLabel("Chave do Google Gemini");
+  const keyField = page.getByRole("textbox", {
+    name: "Chave do Google Gemini",
+  });
   await keyField.fill(TEST_KEY);
   await keyField.press("Enter");
   await expect(page.getByText("Chave do Google Gemini salva")).toBeVisible();
