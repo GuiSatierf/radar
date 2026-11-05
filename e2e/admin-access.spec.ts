@@ -13,7 +13,7 @@ test.beforeEach(async ({ page }) => {
   await assignFreshClientIp(page);
 });
 
-test("o admin libera e-mails, quem cria a conta ganha o plano ao confirmar o e-mail, e o acesso sai", async ({
+test("o admin libera e-mails, quem cria a conta ganha o acesso ao confirmar o e-mail, e o acesso sai", async ({
   page,
   browser,
 }, testInfo) => {
@@ -30,7 +30,6 @@ test("o admin libera e-mails, quem cria a conta ganha o plano ao confirmar o e-m
   await page
     .getByLabel("E-mails para liberar")
     .fill(`${studentEmail.toUpperCase()}\nana@gmail`);
-  await page.getByLabel("Plano que eles ganham").selectOption("completo");
   await page.getByRole("button", { name: "Liberar" }).click();
 
   await expect(page.getByText("1 e-mail liberado.")).toBeVisible();
@@ -40,13 +39,12 @@ test("o admin libera e-mails, quem cria a conta ganha o plano ao confirmar o e-m
   );
   const row = page.getByRole("listitem").filter({ hasText: studentEmail });
   await expect(row).toContainText("Sem conta ainda");
-  await expect(row).toContainText("Completo");
 
   const student = await openAsNewVisitor(browser);
   await signUp(student, studentEmail);
   await student.goto("/studio");
   await expect(
-    student.getByRole("heading", { name: "Sua conta ainda não tem um plano" }),
+    student.getByRole("heading", { name: "Sua conta ainda não tem acesso" }),
   ).toBeVisible({ timeout: NAVIGATION_TIMEOUT });
 
   await student.goto(await confirmationLinkFor(studentEmail));
@@ -68,7 +66,7 @@ test("o admin libera e-mails, quem cria a conta ganha o plano ao confirmar o e-m
 
   await student.goto("/radar");
   await expect(
-    student.getByRole("heading", { name: "Sua conta ainda não tem um plano" }),
+    student.getByRole("heading", { name: "Sua conta ainda não tem acesso" }),
   ).toBeVisible({ timeout: NAVIGATION_TIMEOUT });
 
   await student.context().close();

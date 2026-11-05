@@ -23,7 +23,7 @@ const createVideoSchema = z.object({
   format: z.enum(VIDEO_FORMATS),
 });
 
-const NOT_IN_PLAN_MESSAGE = "O Studio não está no seu plano.";
+const NOT_IN_PLAN_MESSAGE = "Sua conta ainda não tem acesso ao Studio.";
 
 function refusalMessage(
   reason: EnqueueRefusal,

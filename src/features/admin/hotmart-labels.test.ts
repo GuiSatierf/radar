@@ -22,7 +22,7 @@ describe("describeHotmartOutcome", () => {
   it("deve dizer o que o aviso fez quando foi aplicado", () => {
     expect(
       describeHotmartOutcome({ outcome: "applied", detail: "grant" }),
-    ).toEqual({ applied: true, label: "Plano liberado" });
+    ).toEqual({ applied: true, label: "Acesso liberado" });
     expect(
       describeHotmartOutcome({ outcome: "applied", detail: "end" }),
     ).toEqual({
@@ -37,7 +37,7 @@ describe("describeHotmartOutcome", () => {
         outcome: "ignored",
         detail: "product not mapped to a plan",
       }),
-    ).toEqual({ applied: false, label: "Produto que não libera plano" });
+    ).toEqual({ applied: false, label: "Produto que não libera acesso" });
   });
 
   it("deve cair num texto genérico quando não conhece o motivo", () => {

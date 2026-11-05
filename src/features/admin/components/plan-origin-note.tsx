@@ -9,14 +9,14 @@ const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
 function describe(origin: PlanOrigin): string | null {
   if (origin.kind === "none") return null;
 
-  if (origin.kind === "manual") return "Plano mudado pelo admin";
+  if (origin.kind === "manual") return "Acesso mudado pelo admin";
 
-  if (origin.endsAt == null) return "Plano pela Hotmart";
+  if (origin.endsAt == null) return "Acesso pela Hotmart";
 
-  return `Plano pela Hotmart · cancelado, acesso até ${dateFormatter.format(origin.endsAt)}`;
+  return `Acesso pela Hotmart · cancelado, vale até ${dateFormatter.format(origin.endsAt)}`;
 }
 
-/** One line under the account: where its plan came from. */
+/** One line under the account: where its access came from. */
 export function PlanOriginNote(props: {
   origin: PlanOrigin;
 }): ReactElement | null {

@@ -98,13 +98,13 @@ describe("describeQuotaBlock", () => {
     );
   });
 
-  it("deve dizer que o plano não tem vídeos", () => {
+  it("deve dizer que a conta não tem vídeos liberados", () => {
     const block = describeQuotaBlock(
       calculateVideoQuota(0, 0),
       "1º de novembro",
     );
 
-    expect(block).toBe("Seu plano não inclui vídeos.");
+    expect(block).toBe("Os vídeos não estão liberados para a sua conta.");
     expect(block).not.toBe(BUSY_MESSAGE);
   });
 });

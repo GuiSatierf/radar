@@ -50,10 +50,10 @@ export function buildTerms(appName: string): LegalDocument {
         ],
       },
       {
-        title: "Planos e pagamento",
+        title: "Acesso e pagamento",
         paragraphs: [
-          "Os planos são comprados na Hotmart, que cuida do pagamento. O preço e o que cada plano inclui aparecem na página de venda.",
-          "O plano é liberado para o e-mail usado na compra. Use o mesmo e-mail para criar a conta aqui.",
+          "O acesso é comprado na Hotmart, que cuida do pagamento. O preço e o que ele inclui aparecem na página de venda.",
+          "O acesso é liberado para o e-mail usado na compra. Use o mesmo e-mail para criar a conta aqui.",
         ],
       },
       {
@@ -61,7 +61,7 @@ export function buildTerms(appName: string): LegalDocument {
         paragraphs: [
           "Você pode cancelar a assinatura na Hotmart quando quiser. Depois de cancelar, o acesso continua até o fim do período que você já pagou.",
           "Nos 7 primeiros dias depois da compra, você pode desistir e pedir o dinheiro de volta pela Hotmart, como garante o Código de Defesa do Consumidor.",
-          "Se a compra for reembolsada ou contestada no cartão, o plano sai da conta na mesma hora.",
+          "Se a compra for reembolsada ou contestada no cartão, o acesso sai da conta na mesma hora.",
         ],
       },
       {
@@ -77,7 +77,7 @@ export function buildTerms(appName: string): LegalDocument {
         items: [
           "Dividir, emprestar ou revender o acesso.",
           "Copiar os dados do site em massa, com robôs ou programas.",
-          "Tentar passar dos limites do seu plano ou atacar a segurança do site.",
+          "Tentar passar dos limites do seu acesso ou atacar a segurança do site.",
           "Usar o serviço para enganar compradores ou para desrespeitar as regras da Shopee e das redes sociais.",
         ],
       },
@@ -97,7 +97,7 @@ export function buildTerms(appName: string): LegalDocument {
         title: "Quando o serviço para",
         paragraphs: [
           "Trabalhamos para o site funcionar sempre, mas ele pode parar por manutenção ou por falha de serviços de fora, como a Shopee.",
-          "As ferramentas podem mudar com o tempo. Se uma mudança tirar algo importante do seu plano, avisamos antes.",
+          "As ferramentas podem mudar com o tempo. Se uma mudança tirar algo importante do seu acesso, avisamos antes.",
         ],
       },
       {
@@ -129,7 +129,7 @@ export function buildPrivacyPolicy(
         paragraphs: [],
         items: [
           "Da sua conta: nome, e-mail e senha. A senha fica guardada embaralhada, de um jeito que nem a nossa equipe consegue ler.",
-          "Da sua compra: a Hotmart nos avisa o e-mail da compra, o produto, o plano e as datas. Não guardamos cartão, documento nem endereço.",
+          "Da sua compra: a Hotmart nos avisa o e-mail da compra, o produto e as datas. Não guardamos cartão, documento nem endereço.",
           "Dos seus acessos: o endereço de internet (IP) e o tipo de aparelho e navegador de cada vez que você entra.",
           "Das suas escolhas: o seu perfil de comissão na Shopee e o tema claro ou escuro.",
           "Registros de erro do site, que podem ter o número da sua conta, mas nunca a sua senha.",
@@ -142,7 +142,7 @@ export function buildPrivacyPolicy(
         ],
         items: [
           "Criar a sua conta e deixar você entrar.",
-          "Liberar e encerrar o seu plano conforme a compra na Hotmart.",
+          "Liberar e encerrar o seu acesso conforme a compra na Hotmart.",
           "Proteger a conta, por exemplo limitando tentativas de senha errada.",
           "Mandar o link para criar uma senha nova quando você pede.",
           "Responder quando você fala com o suporte.",
@@ -154,7 +154,7 @@ export function buildPrivacyPolicy(
           "A Lei Geral de Proteção de Dados (Lei 13.709/2018) pede que a gente diga por que pode usar cada dado:",
         ],
         items: [
-          "Para prestar o serviço que você assinou: conta, plano e suporte.",
+          "Para prestar o serviço que você assinou: conta, acesso e suporte.",
           "Para cumprir a lei: o Marco Civil da Internet manda guardar os registros de acesso por 6 meses.",
           "Para a segurança de todos: limitar tentativas de senha e investigar acessos estranhos.",
         ],

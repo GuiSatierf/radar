@@ -29,7 +29,7 @@ try {
     },
   });
   // The demo shows every tool; another account is needed to see the locked screens.
-  await setPlanByEmail(db, demoEmail, "pro");
+  await setPlanByEmail(db, demoEmail, "full");
   const admin = await grantAdminRole(db, process.env.ADMIN_EMAIL);
   const products = await collectAndRecord({
     db,
@@ -44,7 +44,7 @@ try {
   });
 
   console.log(
-    `Demo account: ${account} (plan pro). Admin: ${admin}. Demo products: ${products.saved}. New manual demo ads: ${ads}. Collected demo ads: ${collected.saved}.`,
+    `Demo account: ${account} (full access). Admin: ${admin}. Demo products: ${products.saved}. New manual demo ads: ${ads}. Collected demo ads: ${collected.saved}.`,
   );
 } finally {
   await pool.end();

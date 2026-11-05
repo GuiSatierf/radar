@@ -29,7 +29,7 @@ test("o admin liga a Hotmart pela tela e o aviso de teste chega só registrado",
     page.getByRole("heading", { name: "Ligar a Hotmart" }),
   ).toBeVisible({ timeout: NAVIGATION_TIMEOUT });
   const unlockSwitch = page.getByRole("switch", {
-    name: "Liberar os planos sozinho",
+    name: "Liberar o acesso sozinho",
   });
   await expect(unlockSwitch).toHaveAttribute("aria-checked", "false");
   await expect(unlockSwitch).toContainText("Desligado");
@@ -42,14 +42,12 @@ test("o admin liga a Hotmart pela tela e o aviso de teste chega só registrado",
   await expect(page.getByText(/^Salvo em /)).toBeVisible();
 
   await page.getByLabel("Código na Hotmart").fill(planCode);
-  await page.getByLabel("Plano que ele libera").selectOption("pro");
   await page.getByRole("button", { name: "Adicionar" }).click();
   // Inside the page only: the "tirado" toast is a list item with the same code.
   const row = page
     .getByRole("main")
     .getByRole("listitem")
     .filter({ hasText: planCode });
-  await expect(row).toContainText("Pro");
   // Drawn on the server: the kind's name must not come out blank.
   await expect(row).toContainText("Assinatura");
 

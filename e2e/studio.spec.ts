@@ -44,7 +44,7 @@ test.beforeEach(async ({ page }) => {
 test("da ficha do produto ao vídeo pronto para baixar, gastando 1 do mês", async ({
   page,
 }, testInfo) => {
-  await signUp(page, uniqueEmail(testInfo.title), "completo");
+  await signUp(page, uniqueEmail(testInfo.title), "full");
   await page.locator('main a[href^="/radar/"]').first().click();
   await page.getByRole("link", { name: "Criar vídeo no Studio" }).click();
   await expect(page).toHaveURL(/\/studio\?produto=/, {
@@ -73,7 +73,7 @@ test("da ficha do produto ao vídeo pronto para baixar, gastando 1 do mês", asy
 });
 
 test("escolher o produto pela lista com busca", async ({ page }, testInfo) => {
-  await signUp(page, uniqueEmail(testInfo.title), "pro");
+  await signUp(page, uniqueEmail(testInfo.title), "full");
   await page.goto("/studio");
   await expect(page.getByText("Nenhum vídeo ainda")).toBeVisible();
   await expect(
@@ -98,7 +98,7 @@ test("quando os vídeos do mês acabam, o botão trava e explica até quando", a
   page,
 }, testInfo) => {
   const email = uniqueEmail(testInfo.title);
-  await signUp(page, email, "completo");
+  await signUp(page, email, "full");
   await insertVideosFor(
     email,
     Array.from({ length: 12 }, () => ({ status: "expired" })),
@@ -117,26 +117,11 @@ test("quando os vídeos do mês acabam, o botão trava e explica até quando", a
   ).toBeDisabled();
 });
 
-test("sem o Studio no plano, a ficha mostra o botão com cadeado e leva ao aviso do plano", async ({
-  page,
-}, testInfo) => {
-  await signUp(page, uniqueEmail(testInfo.title), "radar");
-  await page.locator('main a[href^="/radar/"]').first().click();
-
-  await page
-    .getByRole("link", { name: "Criar vídeo no Studio (fora do seu plano)" })
-    .click();
-
-  await expect(
-    page.getByRole("heading", { name: "Studio não está no seu plano" }),
-  ).toBeVisible({ timeout: NAVIGATION_TIMEOUT });
-});
-
 test("um vídeo que perdeu o trabalho num deploy fica pronto ao abrir o Studio", async ({
   page,
 }, testInfo) => {
   const email = uniqueEmail(testInfo.title);
-  await signUp(page, email, "completo");
+  await signUp(page, email, "full");
   // Queued a minute ago and never picked up: the click's worker died and no scheduled task ran.
   await insertVideosFor(email, [
     { status: "queued", createdAt: new Date(Date.now() - 60_000) },

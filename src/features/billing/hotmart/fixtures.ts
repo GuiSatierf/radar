@@ -5,12 +5,16 @@ import type { HotmartPlanRow } from "./plan-mapping";
  * for the unit and integration tests.
  */
 export const PRODUCT_ID = 3526906;
-export const RADAR_PLAN_ID = 460805;
-export const PRO_PLAN_ID = 707635;
+export const SUBSCRIPTION_PLAN_ID = 460805;
+export const OTHER_SUBSCRIPTION_PLAN_ID = 707635;
 export const TEST_PLAN_ROWS: readonly HotmartPlanRow[] = [
-  { kind: "plano", hotmartId: String(RADAR_PLAN_ID), plan: "radar" },
-  { kind: "plano", hotmartId: String(PRO_PLAN_ID), plan: "pro" },
-  { kind: "produto", hotmartId: "999", plan: "completo" },
+  { kind: "plano", hotmartId: String(SUBSCRIPTION_PLAN_ID), plan: "full" },
+  {
+    kind: "plano",
+    hotmartId: String(OTHER_SUBSCRIPTION_PLAN_ID),
+    plan: "full",
+  },
+  { kind: "produto", hotmartId: "999", plan: "full" },
 ];
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -34,7 +38,7 @@ export function purchaseEvent(input: {
       purchase: { status: "APPROVED", transaction: "HP02316330308193" },
       subscription: {
         status: "ACTIVE",
-        plan: { id: input.planId ?? RADAR_PLAN_ID, name: "Radar" },
+        plan: { id: input.planId ?? SUBSCRIPTION_PLAN_ID, name: "Mensal" },
         subscriber: { code: "QO4THU04" },
       },
     },
@@ -56,7 +60,10 @@ export function cancellationEvent(input: {
       date_next_charge: input.at + input.paidDays * DAY_MS,
       product: { name: "Assinatura", id: PRODUCT_ID },
       subscriber: { code: "QO4THU04", name: "Maria", email: input.email },
-      subscription: { id: 471681, plan: { name: "Radar", id: RADAR_PLAN_ID } },
+      subscription: {
+        id: 471681,
+        plan: { name: "Mensal", id: SUBSCRIPTION_PLAN_ID },
+      },
       cancellation_date: input.at,
     },
   };
@@ -83,7 +90,7 @@ export function switchPlanEvent(input: {
       },
       plans: [
         { id: input.toPlanId, name: "Novo", current: true },
-        { id: RADAR_PLAN_ID, name: "Radar", current: false },
+        { id: SUBSCRIPTION_PLAN_ID, name: "Mensal", current: false },
       ],
     },
   };

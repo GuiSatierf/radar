@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { hotmartEnvelopeSchema, interpretHotmartEvent } from "./events";
 import {
   cancellationEvent,
-  PRO_PLAN_ID,
+  OTHER_SUBSCRIPTION_PLAN_ID,
   PRODUCT_ID,
   purchaseEvent,
   switchPlanEvent,
@@ -18,12 +18,12 @@ function interpret(body: unknown) {
 }
 
 describe("buildHotmartPlanMapping", () => {
-  it("deve ler assinatura e produto, e a assinatura vence o produto", () => {
+  it("deve liberar pelo código da assinatura ou pelo do produto", () => {
     expect(
-      resolveHotmartPlan(MAPPING, { planId: "707635", productId: "999" }),
-    ).toBe("pro");
+      resolveHotmartPlan(MAPPING, { planId: "707635", productId: "1" }),
+    ).toBe("full");
     expect(resolveHotmartPlan(MAPPING, { planId: "1", productId: "999" })).toBe(
-      "completo",
+      "full",
     );
     expect(
       resolveHotmartPlan(MAPPING, { planId: null, productId: "1" }),
@@ -50,7 +50,7 @@ describe("interpretHotmartEvent", () => {
       kind: "grant",
       email: "maria@email.com",
       productId: String(PRODUCT_ID),
-      plan: "radar",
+      plan: "full",
       renewsAccess: true,
       at: new Date(AT),
     });
@@ -70,7 +70,7 @@ describe("interpretHotmartEvent", () => {
         id: "s",
         email: "a@b.com",
         at: AT,
-        toPlanId: PRO_PLAN_ID,
+        toPlanId: OTHER_SUBSCRIPTION_PLAN_ID,
       }),
     );
 
@@ -104,17 +104,25 @@ describe("interpretHotmartEvent", () => {
     });
   });
 
-  it("deve usar o plano atual na troca de plano", () => {
+  it("deve manter o acesso na troca para outra assinatura que libera", () => {
     const change = interpret(
       switchPlanEvent({
         id: "s",
         email: "a@b.com",
         at: AT,
-        toPlanId: PRO_PLAN_ID,
+        toPlanId: OTHER_SUBSCRIPTION_PLAN_ID,
       }),
     );
 
-    expect(change).toMatchObject({ kind: "grant", plan: "pro" });
+    expect(change).toMatchObject({ kind: "grant", plan: "full" });
+  });
+
+  it("deve ignorar a troca para uma assinatura que não libera", () => {
+    const change = interpret(
+      switchPlanEvent({ id: "s", email: "a@b.com", at: AT, toPlanId: 1 }),
+    );
+
+    expect(change).toMatchObject({ kind: "ignore" });
   });
 
   it("deve ignorar produto fora do mapa, evento sem uso e corpo sem e-mail", () => {

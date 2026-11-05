@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getDatabase } from "@/db/client";
 import { grantAccess, revokeAccess } from "@/features/billing/access-grants";
-import { PAID_PLAN_IDS } from "@/features/plans/plans";
+import { FULL_ACCESS } from "@/features/plans/plans";
 import { logger } from "@/lib/logger";
 import type { AdminActionResult } from "./actions";
 import { MAX_EMAIL_LENGTH, parseEmailList } from "./email-list";
@@ -20,7 +20,6 @@ const MAX_PASTED_LENGTH = 60_000;
 
 const grantSchema = z.object({
   emails: z.string().max(MAX_PASTED_LENGTH),
-  plan: z.enum(PAID_PLAN_IDS),
 });
 const revokeSchema = z.object({
   email: z.string().trim().toLowerCase().min(1).max(MAX_EMAIL_LENGTH),
@@ -43,7 +42,7 @@ export async function grantAccessByEmail(
   const parsed = grantSchema.safeParse(input);
 
   if (parsed.success === false)
-    return { ok: false, message: "Cole os e-mails e escolha um plano." };
+    return { ok: false, message: "Cole os e-mails que vão ganhar acesso." };
 
   const list = parseEmailList(parsed.data.emails);
 
@@ -66,12 +65,12 @@ export async function grantAccessByEmail(
 
   await grantAccess(
     getDatabase(),
-    { emails: list.valid, plan: parsed.data.plan },
+    { emails: list.valid, plan: FULL_ACCESS },
     new Date(),
   );
-  // Only how many and which plan: e-mails are personal data.
+  // Only how many: e-mails are personal data.
   logger.info(
-    { count: list.valid.length, plan: parsed.data.plan },
+    { count: list.valid.length },
     "access granted by e-mail by admin",
   );
   refresh();

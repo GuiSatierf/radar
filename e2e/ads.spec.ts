@@ -25,7 +25,7 @@ function daysAgo(days: number): string {
 test("os anúncios aparecem do que está há mais tempo no ar, com o ganho do produto", async ({
   page,
 }, testInfo) => {
-  await signUp(page, uniqueEmail(testInfo.title), "radar");
+  await signUp(page, uniqueEmail(testInfo.title), "full");
 
   await page.goto("/anuncios");
 
@@ -45,7 +45,7 @@ test("os anúncios aparecem do que está há mais tempo no ar, com o ganho do pr
 test("filtrar por mais de 3 meses no ar deixa só os anúncios antigos", async ({
   page,
 }, testInfo) => {
-  await signUp(page, uniqueEmail(testInfo.title), "radar");
+  await signUp(page, uniqueEmail(testInfo.title), "full");
   await page.goto("/anuncios");
 
   if (isPhone(page))
@@ -107,7 +107,7 @@ test("o admin cadastra um anúncio, que aparece para as assinantes, e depois tir
 test("quem não é admin não acha a área de anúncios do admin", async ({
   page,
 }, testInfo) => {
-  await signUp(page, uniqueEmail(testInfo.title), "pro");
+  await signUp(page, uniqueEmail(testInfo.title), "full");
 
   const response = await page.goto("/admin/anuncios/novo");
 
@@ -117,7 +117,7 @@ test("quem não é admin não acha a área de anúncios do admin", async ({
 test("só no ar agora tira os anúncios que pararam", async ({
   page,
 }, testInfo) => {
-  await signUp(page, uniqueEmail(testInfo.title), "radar");
+  await signUp(page, uniqueEmail(testInfo.title), "full");
   await page.goto("/anuncios");
   await expect(page.getByText(/^Parou depois de/).first()).toBeVisible();
 

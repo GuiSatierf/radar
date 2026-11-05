@@ -45,7 +45,7 @@ export default async function RadarPage(
 ): Promise<ReactElement> {
   const { user, isAllowed } = await checkToolAccess("radar");
 
-  if (!isAllowed) return <LockedTool tool="radar" plan={user.plan} />;
+  if (isAllowed === false) return <LockedTool />;
 
   const filters = parseRadarFilters(await props.searchParams);
   const db = getDatabase();

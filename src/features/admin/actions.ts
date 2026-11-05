@@ -54,7 +54,10 @@ export async function changeUserPlan(
   const parsed = changePlanSchema.safeParse(input);
 
   if (!parsed.success)
-    return { ok: false, message: "Escolha um plano da lista." };
+    return {
+      ok: false,
+      message: "Não deu para mudar o acesso. Atualize a página.",
+    };
 
   const updated = await getDatabase()
     .update(user)
@@ -66,7 +69,7 @@ export async function changeUserPlan(
 
   logger.info(
     { userId: parsed.data.userId, plan: parsed.data.plan },
-    "plan changed by admin",
+    "access changed by admin",
   );
   revalidatePath(ADMIN_PATH);
 

@@ -29,7 +29,7 @@ function SidebarLink(props: {
     <Link
       href={props.item.href}
       aria-label={
-        props.isLocked ? `${props.item.label} (fora do seu plano)` : undefined
+        props.isLocked ? `${props.item.label} (sem acesso)` : undefined
       }
       aria-current={props.isActive ? "page" : undefined}
       className={cn(

@@ -85,6 +85,13 @@
       "when": 1793701020885,
       "tag": "0011_hotmart_unlock_switch",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793827506556,
+      "tag": "0012_single_access",
+      "breakpoints": true
     }
   ]
 }

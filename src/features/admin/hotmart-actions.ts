@@ -11,7 +11,7 @@ import {
   setHotmartUnlocksPlans,
   type UnlockSwitchResult,
 } from "@/features/billing/hotmart/settings";
-import { PAID_PLAN_IDS } from "@/features/plans/plans";
+import { FULL_ACCESS } from "@/features/plans/plans";
 import { logger } from "@/lib/logger";
 import type { AdminActionResult } from "./actions";
 import { isAdminRequest, NOT_ALLOWED_MESSAGE } from "./guard";
@@ -34,9 +34,6 @@ const planKeySchema = z.object({
   kind: z.enum(HOTMART_ID_KINDS),
   hotmartId: z.string().trim().regex(HOTMART_ID_PATTERN),
 });
-const planRowSchema = planKeySchema.extend({
-  plan: z.enum(PAID_PLAN_IDS),
-});
 const unlockSwitchSchema = z.object({ unlocks: z.boolean() });
 
 const MISSING_STEP_MESSAGE: Record<
@@ -44,7 +41,7 @@ const MISSING_STEP_MESSAGE: Record<
   string
 > = {
   hottok: "Salve o código secreto da Hotmart antes de ligar.",
-  plans: "Adicione pelo menos um produto que libere plano antes de ligar.",
+  plans: "Adicione pelo menos um produto que libere o acesso antes de ligar.",
 };
 
 export async function saveHotmartHottok(
@@ -73,15 +70,19 @@ export async function addHotmartPlan(
 ): Promise<AdminActionResult> {
   if ((await isAdminRequest()) === false) return NOT_ALLOWED;
 
-  const parsed = planRowSchema.safeParse(input);
+  const parsed = planKeySchema.safeParse(input);
 
   if (parsed.success === false)
     return {
       ok: false,
-      message: "Use só os números do código da Hotmart e escolha um plano.",
+      message: "Use só os números do código da Hotmart.",
     };
 
-  await saveHotmartPlanRow(getDatabase(), parsed.data);
+  // Every product unlocks the same access; the column stays so purchases keep what they gave.
+  await saveHotmartPlanRow(getDatabase(), {
+    ...parsed.data,
+    plan: FULL_ACCESS,
+  });
   logger.info(
     { kind: parsed.data.kind, hotmartId: parsed.data.hotmartId },
     "hotmart plan mapping saved by admin",

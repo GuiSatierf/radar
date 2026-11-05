@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { and, asc, eq, isNull } from "drizzle-orm";
 import type { Database } from "@/db/client";
 import { hotmartPlanMapping, hotmartSettings } from "@/db/schema";
-import { PAID_PLAN_IDS } from "@/features/plans/plans";
+import { FULL_ACCESS } from "@/features/plans/plans";
 import {
   buildHotmartPlanMapping,
   HOTMART_ID_KINDS,
@@ -109,7 +109,7 @@ function isIdKind(value: string): value is HotmartIdKind {
 
 /**
  * Rows an admin saved, oldest first. A row the code no longer understands is left out, and so is
- * one that would "unlock" no plan: that would wipe a real plan on purchase.
+ * one that would not unlock access: that would wipe real access on purchase.
  */
 export async function listHotmartPlanRows(
   db: Database,
@@ -124,11 +124,9 @@ export async function listHotmartPlanRows(
     .orderBy(asc(hotmartPlanMapping.createdAt), hotmartPlanMapping.hotmartId);
 
   return rows.flatMap((row) => {
-    const plan = PAID_PLAN_IDS.find((id) => id === row.plan);
+    if (isIdKind(row.kind) === false || row.plan !== FULL_ACCESS) return [];
 
-    if (isIdKind(row.kind) === false || plan == null) return [];
-
-    return [{ kind: row.kind, hotmartId: row.hotmartId, plan }];
+    return [{ kind: row.kind, hotmartId: row.hotmartId, plan: FULL_ACCESS }];
   });
 }
 

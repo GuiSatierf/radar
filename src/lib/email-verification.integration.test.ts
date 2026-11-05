@@ -142,16 +142,12 @@ describe("confirmar o e-mail", () => {
 
   it("deve confirmar o e-mail e liberar o plano quando a pessoa cria uma senha nova pelo e-mail", async () => {
     await auth.api.signUpEmail({ body: MARIA });
-    await grantAccess(
-      db,
-      { emails: [MARIA.email], plan: "completo" },
-      new Date(),
-    );
+    await grantAccess(db, { emails: [MARIA.email], plan: "full" }, new Date());
 
     await resetPassword("senha-nova-456");
 
     expect(await isConfirmed()).toBe(true);
-    expect(await planOfMaria()).toBe("completo");
+    expect(await planOfMaria()).toBe("full");
   });
 
   it("não deve deixar quem criou a conta com o e-mail de outra pessoa ficar com o plano dela", async () => {
@@ -162,17 +158,13 @@ describe("confirmar o e-mail", () => {
       MARIA.email,
       MARIA.password,
     );
-    await grantAccess(
-      db,
-      { emails: [MARIA.email], plan: "completo" },
-      new Date(),
-    );
+    await grantAccess(db, { emails: [MARIA.email], plan: "full" }, new Date());
 
     await openConfirmationLink(auth, sender.sent, MARIA.email, null);
     expect(await planOfMaria()).toBe("none");
     await resetPassword("senha-da-maria-456");
 
-    expect(await planOfMaria()).toBe("completo");
+    expect(await planOfMaria()).toBe("full");
     const intruderSession = await auth.api.getSession({
       headers: new Headers({ cookie: intruderCookie }),
     });
@@ -188,7 +180,7 @@ describe("confirmar o e-mail", () => {
     await auth.api.signUpEmail({ body: MARIA });
     await db
       .update(user)
-      .set({ plan: "completo" })
+      .set({ plan: "full" })
       .where(eq(user.email, MARIA.email));
 
     await confirmEmail(auth, sender.sent, MARIA.email, MARIA.password);
@@ -197,7 +189,7 @@ describe("confirmar o e-mail", () => {
       .select({ plan: user.plan })
       .from(user)
       .where(eq(user.email, MARIA.email));
-    expect(row?.plan).toBe("completo");
+    expect(row?.plan).toBe("full");
   });
 
   it("deve recusar o link depois do prazo, sem confirmar", async () => {

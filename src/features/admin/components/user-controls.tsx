@@ -1,50 +1,60 @@
 "use client";
 
-import { Ban, LockOpen } from "lucide-react";
+import { Ban, KeyRound, LockOpen, X } from "lucide-react";
 import { type ReactElement, useTransition } from "react";
 import { toast } from "sonner";
-import { PLAN_IDS, PLANS, type PlanId } from "@/features/plans/plans";
+import { DEFAULT_PLAN, FULL_ACCESS, type PlanId } from "@/features/plans/plans";
 import { changeUserPlan, setUserBlocked } from "../actions";
 
-export function PlanSelect(props: {
+export function AccessButton(props: {
   userId: string;
   userName: string;
   plan: PlanId;
 }): ReactElement {
   const [isPending, startTransition] = useTransition();
+  const hasAccess = props.plan === FULL_ACCESS;
+  const label = hasAccess ? "Tirar acesso" : "Liberar acesso";
+  const Icon = hasAccess ? X : KeyRound;
 
-  function choose(value: string): void {
-    const plan = PLAN_IDS.find((id) => id === value);
+  function toggle(): void {
+    if (
+      hasAccess &&
+      window.confirm(
+        `Tirar o acesso de ${props.userName}? As ferramentas fecham na hora.`,
+      ) === false
+    ) {
+      return;
+    }
 
-    if (plan == null) return;
+    const plan = hasAccess ? DEFAULT_PLAN : FULL_ACCESS;
 
     startTransition(async () => {
       const result = await changeUserPlan({ userId: props.userId, plan });
 
-      if (!result.ok) {
+      if (result.ok === false) {
         toast.error(result.message);
         return;
       }
 
-      toast.success(`${props.userName}: plano ${PLANS[plan].label}`);
+      toast.success(
+        hasAccess
+          ? `Acesso de ${props.userName} tirado.`
+          : `Acesso de ${props.userName} liberado.`,
+      );
     });
   }
 
   return (
-    <select
-      aria-label={`Plano de ${props.userName}`}
-      aria-busy={isPending}
+    <button
+      type="button"
+      onClick={toggle}
       disabled={isPending}
-      value={props.plan}
-      onChange={(event) => choose(event.target.value)}
-      className="h-11 rounded-lg border border-input bg-transparent px-2 text-sm font-medium text-foreground disabled:opacity-60"
+      aria-label={`${label} de ${props.userName}`}
+      className="inline-flex h-11 items-center gap-2 rounded-lg border border-input px-3 text-sm font-medium hover:bg-muted disabled:opacity-60"
     >
-      {PLAN_IDS.map((id) => (
-        <option key={id} value={id}>
-          {PLANS[id].label}
-        </option>
-      ))}
-    </select>
+      <Icon className="size-4" aria-hidden />
+      {label}
+    </button>
   );
 }
 

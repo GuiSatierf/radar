@@ -7,7 +7,7 @@ import { capturingSender, confirmEmail } from "@/lib/auth.fixtures";
 import { applyEndedAccess } from "../access";
 import {
   cancellationEvent,
-  PRO_PLAN_ID,
+  OTHER_SUBSCRIPTION_PLAN_ID,
   purchaseEvent,
   switchPlanEvent,
   TEST_PLAN_ROWS,
@@ -137,7 +137,7 @@ describe("webhook da Hotmart", () => {
     );
 
     expect(response.status).toBe(200);
-    expect(await planOf(EMAIL)).toBe("radar");
+    expect(await planOf(EMAIL)).toBe("full");
   });
 
   it("deve dar o plano ao confirmar o e-mail para quem comprou antes de criar a conta", async () => {
@@ -154,7 +154,7 @@ describe("webhook da Hotmart", () => {
 
     await confirmEmail(auth, sender.sent, EMAIL, PASSWORD);
 
-    expect(await planOf(EMAIL)).toBe("radar");
+    expect(await planOf(EMAIL)).toBe("full");
   });
 
   it("não deve dar a compra de outra pessoa a quem só criou a conta com o e-mail dela", async () => {
@@ -210,18 +210,18 @@ describe("webhook da Hotmart", () => {
     await send(
       cancellationEvent({ id: "e2", email: EMAIL, at: T0, paidDays: 10 }),
     );
-    expect(await planOf(EMAIL)).toBe("radar");
+    expect(await planOf(EMAIL)).toBe("full");
 
     expect(await applyEndedAccess(db, new Date(T0 + 5 * DAY_MS))).toBe(0);
-    expect(await planOf(EMAIL)).toBe("radar");
+    expect(await planOf(EMAIL)).toBe("full");
 
     expect(await applyEndedAccess(db, new Date(T0 + 11 * DAY_MS))).toBe(1);
     expect(await planOf(EMAIL)).toBe("none");
 
     // The admin gives a plan by hand afterwards: the daily task must not undo it.
-    await db.update(user).set({ plan: "pro" }).where(eq(user.email, EMAIL));
+    await db.update(user).set({ plan: "full" }).where(eq(user.email, EMAIL));
     expect(await applyEndedAccess(db, new Date(T0 + 12 * DAY_MS))).toBe(0);
-    expect(await planOf(EMAIL)).toBe("pro");
+    expect(await planOf(EMAIL)).toBe("full");
   });
 
   it("não deve deixar a compra completa, depois do cancelamento, apagar o fim do acesso", async () => {
@@ -253,12 +253,12 @@ describe("webhook da Hotmart", () => {
       { now: T0 + 7 * DAY_MS },
     );
 
-    expect(await planOf(EMAIL)).toBe("radar");
+    expect(await planOf(EMAIL)).toBe("full");
     expect(await applyEndedAccess(db, new Date(T0 + 60 * DAY_MS))).toBe(1);
     expect(await planOf(EMAIL)).toBe("none");
   });
 
-  it("deve mudar o plano na troca depois do cancelamento, mas manter o fim", async () => {
+  it("deve manter o acesso na troca depois do cancelamento, e também o fim", async () => {
     await signUp();
     await send(
       purchaseEvent({
@@ -282,12 +282,12 @@ describe("webhook da Hotmart", () => {
         id: "e3",
         email: EMAIL,
         at: T0 + 2 * DAY_MS,
-        toPlanId: PRO_PLAN_ID,
+        toPlanId: OTHER_SUBSCRIPTION_PLAN_ID,
       }),
       { now: T0 + 2 * DAY_MS },
     );
 
-    expect(await planOf(EMAIL)).toBe("pro");
+    expect(await planOf(EMAIL)).toBe("full");
     expect(await applyEndedAccess(db, new Date(T0 + 60 * DAY_MS))).toBe(1);
     expect(await planOf(EMAIL)).toBe("none");
   });
@@ -322,7 +322,7 @@ describe("webhook da Hotmart", () => {
     );
 
     expect(await applyEndedAccess(db, new Date(T0 + 60 * DAY_MS))).toBe(0);
-    expect(await planOf(EMAIL)).toBe("radar");
+    expect(await planOf(EMAIL)).toBe("full");
   });
 
   it("deve refazer no dia seguinte o fim de acesso que falhou no meio da tarefa", async () => {
@@ -352,7 +352,7 @@ describe("webhook da Hotmart", () => {
       applyEndedAccess(failingOnSecondAccountWrite(), afterPaidPeriod),
     ).rejects.toThrow("simulated database failure");
     const plans = [await planOf(EMAIL), await planOf(OTHER)];
-    expect(plans.toSorted()).toEqual(["none", "radar"]);
+    expect(plans.toSorted()).toEqual(["full", "none"]);
 
     expect(await applyEndedAccess(db, afterPaidPeriod)).toBe(1);
     expect([await planOf(EMAIL), await planOf(OTHER)]).toEqual([
@@ -361,7 +361,7 @@ describe("webhook da Hotmart", () => {
     ]);
   });
 
-  it("deve trocar o plano quando a pessoa muda de plano na Hotmart", async () => {
+  it("deve manter o acesso quando a pessoa muda de plano na Hotmart", async () => {
     await signUp();
     await send(
       purchaseEvent({
@@ -377,11 +377,11 @@ describe("webhook da Hotmart", () => {
         id: "e2",
         email: EMAIL,
         at: T0 + 1000,
-        toPlanId: PRO_PLAN_ID,
+        toPlanId: OTHER_SUBSCRIPTION_PLAN_ID,
       }),
     );
 
-    expect(await planOf(EMAIL)).toBe("pro");
+    expect(await planOf(EMAIL)).toBe("full");
   });
 
   it("deve aplicar o mesmo evento uma vez só, mesmo que a Hotmart mande de novo", async () => {

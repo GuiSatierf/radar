@@ -67,7 +67,7 @@ describe("listUsersForAdmin", () => {
       id: "nova",
       name: "Nova",
       email: "nova@a.test",
-      plan: "pro",
+      plan: "full",
       role: "admin",
       banned: true,
       createdAt: new Date("2026-10-01T00:00:00Z"),
@@ -77,7 +77,7 @@ describe("listUsersForAdmin", () => {
 
     expect(items.map((row) => row.id)).toEqual(["nova", "velha"]);
     expect(items[0]).toMatchObject({
-      plan: "pro",
+      plan: "full",
       isAdmin: true,
       isBlocked: true,
     });
@@ -160,62 +160,56 @@ describe("listRunningAccess", () => {
     await db.insert(hotmartAccess).values({ ...input, lastEventAt: EARLIER });
   }
 
-  it("deve trazer a melhor compra que está valendo de cada e-mail", async () => {
+  it("deve trazer a compra que está valendo de cada e-mail", async () => {
     await insertAccess({
       email: "a@t.test",
       productId: "1",
-      plan: "radar",
-      endsAt: null,
-    });
-    await insertAccess({
-      email: "a@t.test",
-      productId: "2",
-      plan: "pro",
+      plan: "full",
       endsAt: LATER,
     });
     await insertAccess({
       email: "b@t.test",
       productId: "1",
-      plan: "radar",
-      endsAt: LATER,
+      plan: "full",
+      endsAt: null,
     });
 
     const access = await listRunningAccess(db, ["a@t.test", "b@t.test"], NOW);
 
-    expect(access.get("a@t.test")).toEqual({ plan: "pro", endsAt: LATER });
-    expect(access.get("b@t.test")).toEqual({ plan: "radar", endsAt: LATER });
+    expect(access.get("a@t.test")).toEqual({ plan: "full", endsAt: LATER });
+    expect(access.get("b@t.test")).toEqual({ plan: "full", endsAt: null });
   });
 
-  it("deve preferir a compra sem fim quando duas dão o mesmo plano", async () => {
+  it("deve preferir a compra sem fim quando duas dão o acesso", async () => {
     await insertAccess({
       email: "a@t.test",
       productId: "1",
-      plan: "radar",
+      plan: "full",
       endsAt: LATER,
     });
     await insertAccess({
       email: "a@t.test",
       productId: "2",
-      plan: "radar",
+      plan: "full",
       endsAt: null,
     });
 
     const access = await listRunningAccess(db, ["a@t.test"], NOW);
 
-    expect(access.get("a@t.test")).toEqual({ plan: "radar", endsAt: null });
+    expect(access.get("a@t.test")).toEqual({ plan: "full", endsAt: null });
   });
 
   it("não deve trazer compra que já acabou nem e-mail fora da lista", async () => {
     await insertAccess({
       email: "a@t.test",
       productId: "1",
-      plan: "radar",
+      plan: "full",
       endsAt: EARLIER,
     });
     await insertAccess({
       email: "c@t.test",
       productId: "1",
-      plan: "radar",
+      plan: "full",
       endsAt: null,
     });
 

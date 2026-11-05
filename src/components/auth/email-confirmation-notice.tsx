@@ -49,7 +49,7 @@ export function EmailConfirmationNotice(props: {
           <p className="text-sm text-muted-foreground">
             Enviamos um link para{" "}
             <span className="break-all">{props.email}</span>. Se você comprou ou
-            ganhou um plano, ele é liberado assim que você confirmar.
+            ganhou acesso, ele é liberado assim que você confirmar.
           </p>
         </div>
         <Button
@@ -97,7 +97,7 @@ export function EmailConfirmationResult(props: {
       className="flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:bg-emerald-950 dark:text-emerald-100"
     >
       <CircleCheck className="size-5 shrink-0" aria-hidden />
-      E-mail confirmado. Se havia um plano esperando, ele já está liberado.
+      E-mail confirmado. Se havia um acesso esperando, ele já está liberado.
     </p>
   );
 }

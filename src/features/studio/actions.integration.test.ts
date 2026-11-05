@@ -22,10 +22,10 @@ const { createVideo } = await import("./actions");
 const USER_ID = "user-actions";
 let productId = "";
 
-function signedInAs(plan: "radar" | "completo") {
+function signedInAs(plan: "none" | "full") {
   checkToolAccessMock.mockResolvedValue({
     user: { id: USER_ID, plan, commissionProfile: 3, isAdmin: false },
-    isAllowed: plan === "completo",
+    isAllowed: plan === "full",
   });
 }
 
@@ -53,20 +53,20 @@ afterAll(async () => {
 });
 
 describe("createVideo", () => {
-  it("deve recusar quem não tem o Studio no plano, mesmo chamando a ação direto", async () => {
-    signedInAs("radar");
+  it("deve recusar quem não tem acesso, mesmo chamando a ação direto", async () => {
+    signedInAs("none");
 
     const result = await createVideo({ productId, format: "hands" });
 
     expect(result).toEqual({
       ok: false,
-      message: "O Studio não está no seu plano.",
+      message: "Sua conta ainda não tem acesso ao Studio.",
     });
     expect(await db.select().from(studioVideo)).toHaveLength(0);
   });
 
   it("deve recusar formato que não existe", async () => {
-    signedInAs("completo");
+    signedInAs("full");
 
     const result = await createVideo({ productId, format: "avatar" });
 
@@ -75,7 +75,7 @@ describe("createVideo", () => {
   });
 
   it("deve pôr na fila e começar o trabalho logo depois da resposta", async () => {
-    signedInAs("completo");
+    signedInAs("full");
 
     const result = await createVideo({ productId, format: "scene" });
 
@@ -85,7 +85,7 @@ describe("createVideo", () => {
   });
 
   it("deve explicar quando os vídeos do mês acabaram", async () => {
-    signedInAs("completo");
+    signedInAs("full");
     const monthlyVideos = 12;
     await db.insert(studioVideo).values(
       Array.from({ length: monthlyVideos }, (_, index) => ({
