@@ -7,7 +7,6 @@ import { LockedTool } from "@/features/plans/components/locked-tool";
 import { CreateVideoForm } from "@/features/studio/components/create-video-form";
 import { RefreshWhileGenerating } from "@/features/studio/components/refresh-while-generating";
 import { VideoLibrary } from "@/features/studio/components/video-library";
-import { VideoQuotaBox } from "@/features/studio/components/video-quota-box";
 import { shouldNudgeWorker } from "@/features/studio/domain/library";
 import {
   BUSY_MESSAGE,
@@ -85,8 +84,6 @@ export default async function StudioPage(
 
   return (
     <div className="flex flex-col gap-4">
-      <VideoQuotaBox quota={quota} period={limit.period} renewal={renewal} />
-
       {/* Leaves with slice 2, when a paid video API makes the real video. */}
       <p className="flex items-start gap-2 rounded-2xl bg-amber-100 p-3 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-200">
         <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />

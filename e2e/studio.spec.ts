@@ -41,7 +41,7 @@ test.beforeEach(async ({ page }) => {
   await assignFreshClientIp(page);
 });
 
-test("da ficha do produto ao vídeo pronto para baixar, gastando 1 do mês", async ({
+test("da ficha do produto ao vídeo pronto para baixar", async ({
   page,
 }, testInfo) => {
   await signUp(page, uniqueEmail(testInfo.title), "full");
@@ -50,7 +50,6 @@ test("da ficha do produto ao vídeo pronto para baixar, gastando 1 do mês", asy
   await expect(page).toHaveURL(/\/studio\?produto=/, {
     timeout: NAVIGATION_TIMEOUT,
   });
-  await expect(page.getByText("20 de 20")).toBeVisible();
 
   await page.getByRole("radio", { name: /No ambiente/ }).check();
   await page.getByRole("button", { name: "Gerar vídeo" }).click();
@@ -63,7 +62,6 @@ test("da ficha do produto ao vídeo pronto para baixar, gastando 1 do mês", asy
   const download = library.getByRole("link", { name: /Baixar/ });
   await expect(download).toBeVisible({ timeout: VIDEO_READY_TIMEOUT });
   await expect(download).toHaveAttribute("download", /\.mp4$/);
-  await expect(page.getByText("19 de 20")).toBeVisible();
   await expect(library.getByText(/No ambiente · hoje/)).toBeVisible();
 
   const response = await page.request.get(
@@ -106,7 +104,6 @@ test("quando os vídeos do mês acabam, o botão trava e explica até quando", a
 
   await page.goto("/studio");
 
-  await expect(page.getByText("0 de 20")).toBeVisible();
   await expect(
     page.getByText(
       /Você usou os 20 vídeos deste mês. Novos vídeos liberam em 1º de/,
