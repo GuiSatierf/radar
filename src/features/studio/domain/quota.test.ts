@@ -6,6 +6,8 @@ import {
   InvalidVideoQuotaError,
   monthStartInBrazil,
   nextMonthStartInBrazil,
+  nextPeriodStartInBrazil,
+  periodStartInBrazil,
 } from "./quota";
 
 describe("calculateVideoQuota", () => {
@@ -67,12 +69,12 @@ describe("o mês de Brasília", () => {
     expect(nextMonthStartInBrazil(now).toISOString()).toBe(
       "2027-01-01T03:00:00.000Z",
     );
-    expect(formatQuotaRenewal(now)).toBe("1º de janeiro");
+    expect(formatQuotaRenewal("month", now)).toBe("em 1º de janeiro");
   });
 
   it("deve dizer o dia em que a conta volta", () => {
-    expect(formatQuotaRenewal(new Date("2026-10-30T15:00:00Z"))).toBe(
-      "1º de novembro",
+    expect(formatQuotaRenewal("month", new Date("2026-10-30T15:00:00Z"))).toBe(
+      "em 1º de novembro",
     );
   });
 });
@@ -81,7 +83,8 @@ describe("describeQuotaBlock", () => {
   it("não deve travar quando ainda tem vídeo", () => {
     const block = describeQuotaBlock(
       calculateVideoQuota(12, 11),
-      "1º de novembro",
+      "month",
+      "em 1º de novembro",
     );
 
     expect(block).toBeNull();
@@ -90,7 +93,8 @@ describe("describeQuotaBlock", () => {
   it("deve explicar quando os vídeos do mês acabaram", () => {
     const block = describeQuotaBlock(
       calculateVideoQuota(12, 12),
-      "1º de novembro",
+      "month",
+      "em 1º de novembro",
     );
 
     expect(block).toBe(
@@ -98,13 +102,80 @@ describe("describeQuotaBlock", () => {
     );
   });
 
+  it("deve falar do dia quando o limite é por dia", () => {
+    const block = describeQuotaBlock(
+      calculateVideoQuota(3, 3),
+      "day",
+      "amanhã",
+    );
+
+    expect(block).toBe(
+      "Você usou os 3 vídeos de hoje. Novos vídeos liberam amanhã, e os que você já fez continuam aqui.",
+    );
+  });
+
   it("deve dizer que a conta não tem vídeos liberados", () => {
     const block = describeQuotaBlock(
       calculateVideoQuota(0, 0),
-      "1º de novembro",
+      "month",
+      "em 1º de novembro",
     );
 
     expect(block).toBe("Os vídeos não estão liberados para a sua conta.");
     expect(block).not.toBe(BUSY_MESSAGE);
+  });
+});
+
+describe("o dia e a semana de Brasília", () => {
+  it("deve começar o dia à meia-noite de Brasília, mesmo de madrugada em UTC", () => {
+    // 05/11 02:00 UTC is still 04/11 23:00 in Brasília.
+    const now = new Date("2026-11-05T02:00:00Z");
+
+    expect(periodStartInBrazil("day", now).toISOString()).toBe(
+      "2026-11-04T03:00:00.000Z",
+    );
+    expect(nextPeriodStartInBrazil("day", now).toISOString()).toBe(
+      "2026-11-05T03:00:00.000Z",
+    );
+  });
+
+  it("deve começar a semana na segunda-feira", () => {
+    // Wednesday, 4 November 2026.
+    const now = new Date("2026-11-04T15:00:00Z");
+
+    expect(periodStartInBrazil("week", now).toISOString()).toBe(
+      "2026-11-02T03:00:00.000Z",
+    );
+    expect(nextPeriodStartInBrazil("week", now).toISOString()).toBe(
+      "2026-11-09T03:00:00.000Z",
+    );
+  });
+
+  it("deve tratar o domingo como o fim da semana, não o começo", () => {
+    // Sunday, 8 November 2026.
+    const now = new Date("2026-11-08T15:00:00Z");
+
+    expect(periodStartInBrazil("week", now).toISOString()).toBe(
+      "2026-11-02T03:00:00.000Z",
+    );
+  });
+
+  it("deve virar o mês quando a semana atravessa o fim dele", () => {
+    // Friday, 4 December 2026: its week started on Monday, 30 November.
+    const now = new Date("2026-12-04T15:00:00Z");
+
+    expect(periodStartInBrazil("week", now).toISOString()).toBe(
+      "2026-11-30T03:00:00.000Z",
+    );
+  });
+
+  it("deve dizer quando a conta volta em cada período", () => {
+    const now = new Date("2026-11-04T15:00:00Z");
+
+    expect(formatQuotaRenewal("day", now)).toBe("amanhã");
+    expect(formatQuotaRenewal("week", now)).toBe(
+      "na segunda-feira, 9 de novembro",
+    );
+    expect(formatQuotaRenewal("month", now)).toBe("em 1º de dezembro");
   });
 });

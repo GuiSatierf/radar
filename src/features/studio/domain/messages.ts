@@ -1,11 +1,19 @@
-import type { VideoQuota } from "./quota";
+import type { VideoLimitPeriod, VideoQuota } from "./quota";
 
 export const BUSY_MESSAGE =
   "Espere o vídeo que está sendo feito ficar pronto para fazer o próximo.";
 
-/** Why the monthly limit stops a new video, or null when there are videos left. */
+/** "deste mês": the period as it ends a sentence about the videos used. */
+const PERIOD_OF_USE: Readonly<Record<VideoLimitPeriod, string>> = {
+  day: "de hoje",
+  week: "desta semana",
+  month: "deste mês",
+};
+
+/** Why the limit stops a new video, or null when there are videos left. */
 export function describeQuotaBlock(
   quota: VideoQuota,
+  period: VideoLimitPeriod,
   renewal: string,
 ): string | null {
   if (quota.limit === 0)
@@ -13,5 +21,5 @@ export function describeQuotaBlock(
 
   if (quota.remaining > 0) return null;
 
-  return `Você usou os ${quota.limit} vídeos deste mês. Novos vídeos liberam em ${renewal}, e os que você já fez continuam aqui.`;
+  return `Você usou os ${quota.limit} vídeos ${PERIOD_OF_USE[period]}. Novos vídeos liberam ${renewal}, e os que você já fez continuam aqui.`;
 }

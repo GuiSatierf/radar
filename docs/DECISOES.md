@@ -103,10 +103,13 @@ Uma linha por decisão: data, o que foi decidido, por quê, o que foi descartado
 ## Studio
 
 - **30/10/2026 · Studio, fatia 1, com um gerador de exemplo:** o caminho todo (escolher produto e formato, fila, cota do mês, biblioteca, baixar) funciona antes de escolher a API paga de vídeo. O gerador fica atrás da interface `VideoGenerator` (`src/sources/video`), e o de exemplo devolve sempre o mesmo vídeo vertical de 8 segundos (`public/studio/video-de-exemplo.mp4`). A tela avisa que é fase de teste.
-  - **Cota:** conta os vídeos criados no mês de Brasília (do dia 1 à meia-noite), menos os que falharam. Vídeo vencido continua contando: a linha fica no banco, só o link sai.
+  - **Cota:** conta os vídeos criados no período do limite (desde 04/11/2026, escolhido no Admin), menos os que falharam. Vídeo vencido continua contando: a linha fica no banco, só o link sai.
   - **Um vídeo por vez por pessoa:** índice único parcial no banco (`queued` ou `generating`), que segura até dois cliques ao mesmo tempo.
   - **Fila:** o trabalho começa logo depois do clique (`after` do Next) e a tarefa agendada de cada minuto pega o que sobrou. As duas pegam vídeos com `FOR UPDATE SKIP LOCKED`, então nunca fazem o mesmo vídeo duas vezes. Vídeo parado em "gerando" por mais de 15 minutos vira falha, sem gastar da conta. Descartado: só a tarefa agendada, que faria o vídeo esperar até um minuto e não funcionaria no ambiente de demonstração sem configurar a tarefa.
   - **Biblioteca:** o vídeo pronto fica 15 dias; o que falhou fica 1 dia, para a pessoa ver que não gastou, e depois é apagado (virar "vencido" faria ele passar a contar no mês). A tela abre o vídeo no player do próprio aparelho em vez de um player na página.
+- **04/11/2026 · Limite de vídeos e IA de vídeo configurados no Admin (aba Vídeo com IA, migração 0013):** sem planos, o limite deixou de ser do plano. O admin escolhe a quantidade e o período (dia, semana a partir de segunda, ou mês, no horário de Brasília); sem nada salvo, valem 20 por mês (antes eram 12). O admin também cola a chave de cada IA de vídeo e escolhe qual usar. Desde 05/11/2026 o Studio não mostra mais quantos vídeos sobram: só avisa, no botão, quando acabam e quando voltam.
+  - **Chaves cifradas no banco (AES-256-GCM, `src/features/video-ai/key-box.ts`)** com `VIDEO_KEYS_SECRET`, gerada pelo Coolify. O banco sozinho não revela a chave, e ela nunca volta para a tela nem para o log. Descartado: variável de ambiente por serviço (só quem cuida do Coolify trocaria, e cada troca pediria reiniciar).
+  - **Primeira IA: Gemini Omni Flash, do Google (cerca de US$ 0,10 por segundo).** O Veo saiu da API do Gemini em 22/10/2026, e o Omni é o substituto oficial. Só entram na lista as IAs que o app já sabe chamar; as outras entram uma por uma, cada uma com o seu gerador. A ligação de verdade com o Omni (gerar e guardar o vídeo) vem no passo seguinte; até lá o Studio segue com o vídeo de exemplo.
 
 ## Stack
 

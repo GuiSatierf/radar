@@ -4,7 +4,12 @@ import type { Database } from "@/db/client";
 import { product, studioVideo } from "@/db/schema";
 import type { VideoGenerator } from "@/sources/video/video-generator";
 import { isVideoFormat, type VideoFormat } from "./domain/formats";
-import { calculateVideoQuota, monthStartInBrazil } from "./domain/quota";
+import {
+  calculateVideoQuota,
+  periodStartInBrazil,
+  type VideoLimit,
+  type VideoLimitPeriod,
+} from "./domain/quota";
 
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -37,10 +42,11 @@ function readErrorCode(error: unknown): unknown {
   return undefined;
 }
 
-/** Videos made in the current Brazil month that count toward the limit (failed ones do not). */
-export async function countVideosThisMonth(
+/** Videos made in the current Brazil day, week or month that count toward the limit (failed ones do not). */
+export async function countVideosInPeriod(
   db: Database,
   userId: string,
+  period: VideoLimitPeriod,
   now: Date,
 ): Promise<number> {
   const [row] = await db
@@ -49,7 +55,7 @@ export async function countVideosThisMonth(
     .where(
       and(
         eq(studioVideo.userId, userId),
-        gte(studioVideo.createdAt, monthStartInBrazil(now)),
+        gte(studioVideo.createdAt, periodStartInBrazil(period, now)),
         ne(studioVideo.status, "failed"),
       ),
     );
@@ -73,10 +79,10 @@ async function hasActiveVideo(db: Database, userId: string): Promise<boolean> {
 }
 
 /**
- * Puts a video in the queue after the server-side checks: the product exists, the month still
+ * Puts a video in the queue after the server-side checks: the product exists, the period still
  * has videos left and the person has no other video being made.
  *
- * @param monthlyVideos - The plan's monthly limit (non-negative integer).
+ * @param limit - How many videos each person makes per period (count is a non-negative integer).
  * @returns The new video id, or why it was refused.
  */
 export async function enqueueVideo(input: {
@@ -84,7 +90,7 @@ export async function enqueueVideo(input: {
   userId: string;
   productId: string;
   format: VideoFormat;
-  monthlyVideos: number;
+  limit: VideoLimit;
   now: Date;
 }): Promise<EnqueueResult> {
   const { db, userId, now } = input;
@@ -94,14 +100,14 @@ export async function enqueueVideo(input: {
       .from(product)
       .where(eq(product.id, input.productId))
       .limit(1),
-    countVideosThisMonth(db, userId, now),
+    countVideosInPeriod(db, userId, input.limit.period, now),
     hasActiveVideo(db, userId),
   ]);
   const picked = products[0];
 
   if (picked == null) return { ok: false, reason: "product-not-found" };
 
-  if (calculateVideoQuota(input.monthlyVideos, used).remaining === 0) {
+  if (calculateVideoQuota(input.limit.count, used).remaining === 0) {
     return { ok: false, reason: "no-videos-left" };
   }
 
@@ -269,7 +275,7 @@ export async function processVideoQueue(input: {
 
 /**
  * Takes expired videos out of the library. Ready videos keep their row, because they still count
- * toward the month's limit; only the link goes. Failed videos never counted, so their row goes too:
+ * toward the limit; only the link goes. Failed videos never counted, so their row goes too:
  * turning them into "expired" would start charging them.
  */
 export async function expireOldVideos(

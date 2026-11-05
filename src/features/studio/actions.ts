@@ -4,12 +4,16 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { z } from "zod";
 import { getDatabase } from "@/db/client";
-import { PLANS } from "@/features/plans/plans";
+import { getVideoSettings } from "@/features/video-ai/settings";
 import { checkToolAccess } from "@/lib/session";
 import { VIDEO_FORMATS } from "./domain/formats";
 import { MAX_PRODUCT_SEARCH_LENGTH } from "./domain/library";
 import { BUSY_MESSAGE, describeQuotaBlock } from "./domain/messages";
-import { calculateVideoQuota, formatQuotaRenewal } from "./domain/quota";
+import {
+  calculateVideoQuota,
+  formatQuotaRenewal,
+  type VideoLimit,
+} from "./domain/quota";
 import { listStudioProducts, type StudioProduct } from "./queries";
 import { type EnqueueRefusal, enqueueVideo } from "./queue";
 import { runVideoQueue } from "./run-queue";
@@ -27,7 +31,7 @@ const NOT_IN_PLAN_MESSAGE = "Sua conta ainda não tem acesso ao Studio.";
 
 function refusalMessage(
   reason: EnqueueRefusal,
-  monthlyVideos: number,
+  limit: VideoLimit,
   now: Date,
 ): string {
   if (reason === "product-not-found") {
@@ -36,14 +40,15 @@ function refusalMessage(
 
   if (reason === "busy") return BUSY_MESSAGE;
 
-  const quota = calculateVideoQuota(monthlyVideos, monthlyVideos);
+  const quota = calculateVideoQuota(limit.count, limit.count);
+  const renewal = formatQuotaRenewal(limit.period, now);
 
   return (
-    describeQuotaBlock(quota, formatQuotaRenewal(now)) ?? NOT_IN_PLAN_MESSAGE
+    describeQuotaBlock(quota, limit.period, renewal) ?? NOT_IN_PLAN_MESSAGE
   );
 }
 
-/** Queues a video. The server checks the plan, the monthly limit and the product; never the screen. */
+/** Queues a video. The server checks the access, the video limit and the product; never the screen. */
 export async function createVideo(input: unknown): Promise<CreateVideoResult> {
   const { user, isAllowed } = await checkToolAccess("studio");
 
@@ -56,20 +61,21 @@ export async function createVideo(input: unknown): Promise<CreateVideoResult> {
   }
 
   const now = new Date();
-  const monthlyVideos = PLANS[user.plan].monthlyVideos;
+  const db = getDatabase();
+  const { limit } = await getVideoSettings(db);
   const result = await enqueueVideo({
-    db: getDatabase(),
+    db,
     userId: user.id,
     productId: parsed.data.productId,
     format: parsed.data.format,
-    monthlyVideos,
+    limit,
     now,
   });
 
   if (result.ok === false) {
     return {
       ok: false,
-      message: refusalMessage(result.reason, monthlyVideos, now),
+      message: refusalMessage(result.reason, limit, now),
     };
   }
 
