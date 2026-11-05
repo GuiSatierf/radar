@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { DEFAULT_VIDEO_LIMIT } from "../src/features/studio/domain/quota";
 import {
   assignFreshClientIp,
   makeAdmin,
@@ -27,8 +28,12 @@ test("o admin salva o limite de vídeos e a chave de uma IA pela tela", async ({
     { timeout: NAVIGATION_TIMEOUT },
   );
 
-  await page.getByLabel("Quantidade de vídeos").fill("12");
-  await page.getByLabel("Período do limite").selectOption("month");
+  await page
+    .getByLabel("Quantidade de vídeos")
+    .fill(String(DEFAULT_VIDEO_LIMIT.count));
+  await page
+    .getByLabel("Período do limite")
+    .selectOption(DEFAULT_VIDEO_LIMIT.period);
   await page
     .getByRole("button", { name: "Salvar", exact: true })
     .first()
@@ -53,7 +58,9 @@ test("o admin salva o limite de vídeos e a chave de uma IA pela tela", async ({
       .getByLabel("IA que cria os vídeos")
       .getByRole("option", { name: /Gemini Omni Flash/ }),
   ).toHaveCount(1);
-  await expect(page.getByLabel("Quantidade de vídeos")).toHaveValue("12");
+  await expect(page.getByLabel("Quantidade de vídeos")).toHaveValue(
+    String(DEFAULT_VIDEO_LIMIT.count),
+  );
 });
 
 test("quem não é admin não acha a página de vídeo com IA", async ({
