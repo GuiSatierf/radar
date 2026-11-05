@@ -22,9 +22,6 @@ export const FULL_ACCESS: PlanId = "full";
 
 export interface Plan {
   readonly id: PlanId;
-  readonly label: string;
-  /** One short sentence for the person, shown in settings and in the admin. */
-  readonly description: string;
   readonly tools: readonly Tool[];
   readonly monthlyVideos: number;
 }
@@ -34,15 +31,11 @@ const ALL_TOOLS: readonly Tool[] = TOOLS;
 export const PLANS: Readonly<Record<PlanId, Plan>> = {
   none: {
     id: "none",
-    label: "Sem acesso",
-    description: "A conta foi criada, mas o acesso ainda não foi liberado.",
     tools: [],
     monthlyVideos: 0,
   },
   full: {
     id: "full",
-    label: "Com acesso",
-    description: "Todas as ferramentas, com 12 vídeos por mês.",
     tools: ALL_TOOLS,
     monthlyVideos: 12,
   },

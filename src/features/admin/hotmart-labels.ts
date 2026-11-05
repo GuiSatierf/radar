@@ -15,7 +15,7 @@ const EVENT_LABELS: Readonly<Record<string, string>> = {
   PURCHASE_CANCELED: "Compra cancelada",
   PURCHASE_EXPIRED: "Compra expirada",
   SUBSCRIPTION_CANCELLATION: "Assinatura cancelada",
-  SWITCH_PLAN: "Troca de plano na Hotmart",
+  SWITCH_PLAN: "Troca de assinatura na Hotmart",
 };
 
 // Keys are the details the webhook stores (src/features/billing/hotmart).
@@ -47,7 +47,7 @@ export function describeHotmartOutcome(input: {
   if (input.outcome === "applied")
     return { applied: true, label: APPLIED_LABELS[detail] ?? "Aplicado" };
 
-  // Plans are not unlocked automatically yet: the event was only kept.
+  // Access is not unlocked automatically yet: the event was only kept.
   if (input.outcome === "received")
     return { applied: false, label: "Registrado" };
 

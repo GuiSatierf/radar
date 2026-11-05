@@ -5,7 +5,6 @@ import type { ReactElement, ReactNode } from "react";
 import { SignOutButton } from "@/components/app-shell/sign-out-button";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { LegalLinks } from "@/features/legal/components/legal-links";
-import { PLANS } from "@/features/plans/plans";
 import { CommissionProfileSwitcher } from "@/features/settings/commission-profile-switcher";
 import { requireCurrentUser } from "@/lib/session";
 
@@ -63,13 +62,6 @@ export default async function SettingsPage(): Promise<ReactElement> {
           <KeyRound className="size-4" aria-hidden />
           Trocar senha
         </Link>
-      </SettingsRow>
-
-      <SettingsRow
-        title="Acesso"
-        description={`${PLANS[user.plan].description} Dúvidas sobre o acesso, fale com o suporte.`}
-      >
-        <span className="text-sm font-medium">{PLANS[user.plan].label}</span>
       </SettingsRow>
 
       <SettingsRow
