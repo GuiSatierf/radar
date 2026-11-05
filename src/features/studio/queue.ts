@@ -342,10 +342,18 @@ export async function expireOldVideos(
       .returning({ id: studioVideo.id }),
   ]);
 
-  await removeVideoFiles(
-    videoFilesDir,
-    expired.map((video) => video.id),
-  );
+  try {
+    await removeVideoFiles(
+      videoFilesDir,
+      expired.map((video) => video.id),
+    );
+  } catch (error) {
+    // A file left on disk must not stop the queue, which runs right after this in the same pass.
+    logger.error(
+      { err: error, videoIds: expired.map((video) => video.id) },
+      "expired video files could not be deleted",
+    );
+  }
 
   return expired.length + removed.length;
 }

@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { eq, sql } from "drizzle-orm";
@@ -20,7 +20,11 @@ import {
   expireOldVideos,
   processVideoQueue,
 } from "./queue";
-import { readVideoFileSize, videoDownloadUrl } from "./video-files";
+import {
+  readVideoFileSize,
+  videoDownloadUrl,
+  videoFilePath,
+} from "./video-files";
 
 const { db, pool } = createDatabase(process.env.TEST_DATABASE_URL ?? "");
 
@@ -283,6 +287,31 @@ describe("vídeo feito por uma IA de verdade", () => {
     await expireOldVideos(db, new Date("2026-11-14T15:00:01Z"), videoFilesDir);
 
     expect(await readVideoFileSize(videoFilesDir, videoId)).toBeNull();
+  });
+
+  it("deve tirar o vídeo da biblioteca mesmo quando o arquivo não pode ser apagado", async () => {
+    const queued = await enqueue();
+    const videoId = queued.ok ? queued.videoId : "";
+    await processVideoQueue({
+      db,
+      videoFilesDir,
+      generator: fileGenerator,
+      clock: () => NOW,
+    });
+    // A folder in the file's place makes the delete fail, like a permission error would.
+    const filePath = videoFilePath(videoFilesDir, videoId);
+    await rm(filePath);
+    await mkdir(filePath);
+
+    const expired = await expireOldVideos(
+      db,
+      new Date("2026-11-14T15:00:01Z"),
+      videoFilesDir,
+    );
+
+    expect(expired).toBe(1);
+    expect((await storedVideos())[0]?.status).toBe("expired");
+    await rm(filePath, { recursive: true });
   });
 });
 
