@@ -18,7 +18,7 @@ const NOW = new Date("2026-11-04T15:00:00Z");
 const SECRET = "segredo-de-teste-das-chaves-com-mais-de-32";
 const GOOGLE_MODEL = {
   provider: "google",
-  model: "gemini-omni-1.1-flash",
+  model: "gemini-omni-1.2-flash",
 } as const;
 
 async function saveGoogleKey(): Promise<void> {

@@ -111,6 +111,19 @@ export async function listSavedVideoKeys(
   );
 }
 
+/** A service's key as stored (encrypted), or null when none is saved. */
+export async function readVideoKeyCiphertext(
+  db: Database,
+  provider: VideoProviderId,
+): Promise<string | null> {
+  const [row] = await db
+    .select({ keyCiphertext: videoProviderKey.keyCiphertext })
+    .from(videoProviderKey)
+    .where(eq(videoProviderKey.provider, provider));
+
+  return row?.keyCiphertext ?? null;
+}
+
 /** Saves (or replaces) a service's key, encrypted with VIDEO_KEYS_SECRET. */
 export async function saveVideoKey(
   db: Database,

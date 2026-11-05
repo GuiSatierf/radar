@@ -30,9 +30,9 @@ export const VIDEO_PROVIDERS: Readonly<Record<VideoProviderId, VideoProvider>> =
         "Crie em aistudio.google.com, em Get API key, numa conta com cobrança ligada.",
       models: [
         {
-          id: "gemini-omni-1.1-flash",
+          id: "gemini-omni-1.2-flash",
           label: "Gemini Omni Flash",
-          costHint: "cerca de R$ 4 por vídeo de 8 segundos",
+          costHint: "cerca de R$ 3 por vídeo de 8 segundos",
         },
       ],
     },
