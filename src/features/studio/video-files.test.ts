@@ -46,6 +46,14 @@ describe("arquivos de vídeo", () => {
     expect(size).toBeNull();
   });
 
+  it("deve tratar um arquivo vazio como ausente", async () => {
+    await saveVideoFile(directory, VIDEO_ID, new Uint8Array([]));
+
+    const size = await readVideoFileSize(directory, VIDEO_ID);
+
+    expect(size).toBeNull();
+  });
+
   it("deve apagar os arquivos e aceitar os que já não existem", async () => {
     await saveVideoFile(directory, VIDEO_ID, new Uint8Array([1]));
     const missingId = "00000000-0000-4000-8000-000000000000";

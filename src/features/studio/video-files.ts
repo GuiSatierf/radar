@@ -61,7 +61,7 @@ export async function removeVideoFiles(
   );
 }
 
-/** The size of a stored video, or null when the file is not there. */
+/** The size of a stored video, or null when the file is not there or is empty. */
 export async function readVideoFileSize(
   directory: string,
   videoId: string,
@@ -69,7 +69,9 @@ export async function readVideoFileSize(
   try {
     const info = await stat(videoFilePath(directory, videoId));
 
-    return info.isFile() ? info.size : null;
+    if (info.isFile() === false || info.size === 0) return null;
+
+    return info.size;
   } catch (error) {
     if (error instanceof Error && "code" in error && error.code === "ENOENT")
       return null;
