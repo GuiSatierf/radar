@@ -44,7 +44,7 @@ try {
   });
 
   console.log(
-    `Demo account: ${account} (plan pro). Admin: ${admin}. Demo products: ${products.saved}. New manual demo ads: ${ads}. Collected demo ads: ${collected.saved}.`,
+    `Demo account: ${account} (full access). Admin: ${admin}. Demo products: ${products.saved}. New manual demo ads: ${ads}. Collected demo ads: ${collected.saved}.`,
   );
 } finally {
   await pool.end();
