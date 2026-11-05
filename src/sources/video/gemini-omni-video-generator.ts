@@ -9,16 +9,17 @@ import type {
 import { buildVideoPrompt } from "./video-prompt";
 
 const API_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
-// The creation call may hold until the video is done, which takes minutes.
-const CREATE_TIMEOUT_IN_MS = 10 * 60 * 1000;
 const POLL_TIMEOUT_IN_MS = 60_000;
 const POLL_INTERVAL_IN_MS = 10_000;
 // Below the queue's 15 minutes, so the queue never gives up on a video that is still coming.
 const TOTAL_DEADLINE_IN_MS = 13 * 60 * 1000;
+// The creation call may hold until the video is done. Aborting it loses the interaction id while
+// Google keeps making (and billing) the video, so it gets the whole deadline.
+const CREATE_TIMEOUT_IN_MS = TOTAL_DEADLINE_IN_MS;
 const MAX_ERROR_BODY_LENGTH = 200;
 
 /** Fixed for every Studio video: vertical, 8 seconds, 720p (the price shown to the admin). */
-export const STUDIO_VIDEO_SHAPE = {
+const STUDIO_VIDEO_SHAPE = {
   type: "video",
   aspect_ratio: "9:16",
   duration: "8s",
