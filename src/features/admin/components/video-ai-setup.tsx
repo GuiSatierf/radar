@@ -1,7 +1,6 @@
 "use client";
 
 import { Trash2 } from "lucide-react";
-import Image from "next/image";
 import { type FormEvent, type ReactElement, useTransition } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -153,20 +152,8 @@ export function VideoAiPicker(props: {
   );
 }
 
+/** The service's first letter, in place of a logo. */
 function ProviderLogo(props: { provider: VideoProvider }): ReactElement {
-  if (props.provider.logoPath != null) {
-    return (
-      <Image
-        src={props.provider.logoPath}
-        alt=""
-        width={28}
-        height={28}
-        unoptimized
-        className="size-7 shrink-0"
-      />
-    );
-  }
-
   return (
     <span
       aria-hidden

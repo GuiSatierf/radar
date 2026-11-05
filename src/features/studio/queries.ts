@@ -16,7 +16,7 @@ import { isVideoFormat, type VideoFormat } from "./domain/formats";
 import type { VideoLimitPeriod } from "./domain/quota";
 import { countVideosInPeriod } from "./queue";
 
-// A plan gives at most 30 videos a month and they last 15 days, so this is never reached.
+// Caps the page. Videos last 15 days, so only a limit above 4 a day fills it; then the newest show.
 const MAX_LIBRARY_VIDEOS = 60;
 
 export type LibraryVideoStatus = "queued" | "generating" | "ready" | "failed";

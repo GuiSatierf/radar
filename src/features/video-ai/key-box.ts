@@ -12,8 +12,8 @@ const TAG_BYTES = 16;
 const FORMAT_PREFIX = "v1:";
 
 export class UnreadableVideoKeyError extends Error {
-  constructor(reason: string) {
-    super(`stored video AI key could not be read: ${reason}`);
+  constructor(reason: string, options?: ErrorOptions) {
+    super(`stored video AI key could not be read: ${reason}`, options);
     this.name = "UnreadableVideoKeyError";
   }
 }
@@ -76,6 +76,7 @@ export function decryptVideoKey(stored: string, secret: string): string {
   } catch (error) {
     throw new UnreadableVideoKeyError(
       error instanceof Error ? error.message : "decryption failed",
+      { cause: error },
     );
   }
 }

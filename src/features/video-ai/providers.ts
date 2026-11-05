@@ -16,8 +16,6 @@ export interface VideoModel {
 export interface VideoProvider {
   readonly id: VideoProviderId;
   readonly name: string;
-  /** Logo under public/, or null while there is none: the screen shows the first letter. */
-  readonly logoPath: string | null;
   /** Where the admin gets the key, in one sentence. */
   readonly keyHelp: string;
   readonly models: readonly VideoModel[];
@@ -28,7 +26,6 @@ export const VIDEO_PROVIDERS: Readonly<Record<VideoProviderId, VideoProvider>> =
     google: {
       id: "google",
       name: "Google Gemini",
-      logoPath: null,
       keyHelp:
         "Crie em aistudio.google.com, em Get API key, numa conta com cobrança ligada.",
       models: [

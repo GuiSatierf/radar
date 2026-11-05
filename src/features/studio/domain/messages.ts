@@ -4,7 +4,7 @@ export const BUSY_MESSAGE =
   "Espere o vídeo que está sendo feito ficar pronto para fazer o próximo.";
 
 /** "deste mês": the period as it ends a sentence about the videos used. */
-export const PERIOD_OF_USE: Readonly<Record<VideoLimitPeriod, string>> = {
+const PERIOD_OF_USE: Readonly<Record<VideoLimitPeriod, string>> = {
   day: "de hoje",
   week: "desta semana",
   month: "deste mês",
