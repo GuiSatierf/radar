@@ -8,8 +8,8 @@ export const SAMPLE_VIDEO_URL = "/studio/video-de-exemplo.mp4";
 const DEFAULT_GENERATION_TIME_IN_MS = 3_000;
 
 /**
- * The test-phase generator: it costs nothing and always returns the sample clip, so the whole
- * Studio path (queue, monthly limit, library, download) works before a paid API is chosen.
+ * The sample generator: it costs nothing and always returns the sample clip. The Studio uses it
+ * while the admin has not chosen a video AI, and the tests use it everywhere.
  */
 export function createFakeVideoGenerator(
   options: { generationTimeInMs?: number } = {},
@@ -22,7 +22,7 @@ export function createFakeVideoGenerator(
     async generate(): Promise<GeneratedVideo> {
       await wait(generationTimeInMs);
 
-      return { videoUrl: SAMPLE_VIDEO_URL };
+      return { kind: "link", videoUrl: SAMPLE_VIDEO_URL };
     },
   };
 }
