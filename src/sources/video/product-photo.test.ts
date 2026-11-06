@@ -69,7 +69,36 @@ describe("downloadProductPhoto", () => {
     );
 
     await expect(downloadProductPhoto(PHOTO_URL, fetchImpl)).rejects.toThrow(
-      `${MAX_PHOTO_BYTES + 1} bytes`,
+      `more than ${MAX_PHOTO_BYTES} bytes`,
     );
+  });
+
+  it("deve parar de baixar assim que a foto sem tamanho informado passa de 7 MB", async () => {
+    const CHUNK_BYTES = 1024 * 1024;
+    const TOTAL_CHUNKS = 50;
+    let chunksRead = 0;
+    const endlessPhoto = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        if (chunksRead === TOTAL_CHUNKS) {
+          controller.close();
+          return;
+        }
+
+        chunksRead += 1;
+        controller.enqueue(new Uint8Array(CHUNK_BYTES));
+      },
+    });
+    const fetchImpl = vi.fn(
+      async () =>
+        new Response(endlessPhoto, {
+          headers: { "content-type": "image/jpeg" },
+        }),
+    );
+
+    await expect(
+      downloadProductPhoto(PHOTO_URL, fetchImpl),
+    ).rejects.toBeInstanceOf(ProductPhotoError);
+
+    expect(chunksRead).toBeLessThan(TOTAL_CHUNKS / 2);
   });
 });

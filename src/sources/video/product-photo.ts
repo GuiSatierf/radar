@@ -59,11 +59,38 @@ export async function downloadProductPhoto(
     throw new ProductPhotoError(`the photo has ${declaredSize} bytes`);
   }
 
-  const bytes = new Uint8Array(await response.arrayBuffer());
+  const bytes = await readUpToLimit(response);
 
-  if (bytes.byteLength === 0 || bytes.byteLength > MAX_PHOTO_BYTES) {
-    throw new ProductPhotoError(`the photo has ${bytes.byteLength} bytes`);
+  if (bytes.byteLength === 0) {
+    throw new ProductPhotoError("the photo has 0 bytes");
   }
 
-  return { base64: Buffer.from(bytes).toString("base64"), mimeType };
+  return { base64: bytes.toString("base64"), mimeType };
+}
+
+/** Reads the body but stops as soon as it passes the limit, so a huge file is never held whole. */
+async function readUpToLimit(response: Response): Promise<Buffer> {
+  if (response.body == null) return Buffer.alloc(0);
+
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+
+  while (true) {
+    const { done, value } = await reader.read();
+
+    if (done) return Buffer.concat(chunks);
+
+    total += value.byteLength;
+
+    if (total > MAX_PHOTO_BYTES) {
+      await reader.cancel();
+
+      throw new ProductPhotoError(
+        `the photo has more than ${MAX_PHOTO_BYTES} bytes`,
+      );
+    }
+
+    chunks.push(value);
+  }
 }
