@@ -106,7 +106,16 @@ export function parseByteRange(
 
   const [, startText = "", endText = ""] = match;
 
-  if (startText === "" && endText === "") return "unsatisfiable";
+  // An invalid range ("-" alone, or an end before the start) is ignored, not refused (RFC 9110).
+  if (startText === "" && endText === "") return "whole";
+
+  if (
+    startText !== "" &&
+    endText !== "" &&
+    Number(endText) < Number(startText)
+  ) {
+    return "whole";
+  }
 
   if (startText === "") {
     const suffix = Number(endText);
@@ -119,7 +128,7 @@ export function parseByteRange(
   const start = Number(startText);
   const end = endText === "" ? size - 1 : Math.min(Number(endText), size - 1);
 
-  if (start >= size || start > end) return "unsatisfiable";
+  if (start >= size) return "unsatisfiable";
 
   return { start, end };
 }

@@ -95,8 +95,12 @@ describe("parseByteRange", () => {
     expect(parseByteRange("bytes=100-", 100)).toBe("unsatisfiable");
   });
 
-  it("deve recusar início maior que o fim", () => {
-    expect(parseByteRange("bytes=20-10", 100)).toBe("unsatisfiable");
+  it("deve mandar o arquivo inteiro quando o início é maior que o fim, porque o pedido é inválido", () => {
+    expect(parseByteRange("bytes=20-10", 100)).toBe("whole");
+  });
+
+  it("deve mandar o arquivo inteiro quando o pedido não diz início nem fim", () => {
+    expect(parseByteRange("bytes=-", 100)).toBe("whole");
   });
 
   it("deve recusar pedido de zero bytes do fim", () => {
