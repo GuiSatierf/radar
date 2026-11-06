@@ -4,6 +4,7 @@ const MIN_SECRET_LENGTH = 32;
 const DEFAULT_APP_NAME = "Prisciane";
 const DEFAULT_LOG_LEVEL = "info";
 const RESEND_KEY_PREFIX = "re_";
+const DEFAULT_VIDEO_FILES_DIR = "data/videos";
 // "endereco@dominio" or "Nome <endereco@dominio>".
 const SENDER_ADDRESS =
   /^(?:[^<>@]+<[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+>|[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+)$/;
@@ -56,6 +57,11 @@ const serverEnvSchema = z.object({
   VIDEO_KEYS_SECRET: z.preprocess(
     blankToUndefined,
     z.string().min(MIN_SECRET_LENGTH).optional(),
+  ),
+  // Folder for the Studio's generated videos. In Docker it is a volume, so videos survive deploys.
+  VIDEO_FILES_DIR: z.preprocess(
+    blankToUndefined,
+    z.string().trim().min(1).default(DEFAULT_VIDEO_FILES_DIR),
   ),
 });
 
