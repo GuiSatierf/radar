@@ -13,9 +13,10 @@ const POLL_TIMEOUT_IN_MS = 60_000;
 const POLL_INTERVAL_IN_MS = 10_000;
 // Below the queue's 15 minutes, so the queue never gives up on a video that is still coming.
 const TOTAL_DEADLINE_IN_MS = 13 * 60 * 1000;
-// The creation call may hold until the video is done. Aborting it loses the interaction id while
-// Google keeps making (and billing) the video, so it gets the whole deadline.
-const CREATE_TIMEOUT_IN_MS = TOTAL_DEADLINE_IN_MS;
+// The video is asked for in the background, so the creation call answers with the id right away.
+// Waiting on it instead would break at Node's 5-minute limit for response headers, losing the id
+// while Google keeps making (and billing) the video.
+const CREATE_TIMEOUT_IN_MS = 60_000;
 const MAX_ERROR_BODY_LENGTH = 200;
 
 /** Fixed for every Studio video: vertical, 8 seconds, 720p (the price shown to the admin). */
@@ -159,6 +160,7 @@ export function createGeminiOmniVideoGenerator(options: {
       body: JSON.stringify({
         model: options.model,
         input,
+        background: true,
         generation_config: {
           video_config: {
             task: photo == null ? "text_to_video" : "image_to_video",

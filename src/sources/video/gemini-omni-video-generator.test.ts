@@ -74,6 +74,7 @@ function generatorWith(fetchImpl: typeof fetch, now: () => number = () => 0) {
 
 function sentBody(fetchImpl: ReturnType<typeof fakeFetch>): {
   model: string;
+  background?: boolean;
   input: { type: string; mime_type?: string; text?: string }[];
   generation_config: { video_config: { task: string } };
   response_format: Record<string, string>;
@@ -116,6 +117,14 @@ describe("createGeminiOmniVideoGenerator", () => {
     });
     expect(new Headers(init.headers).get("x-goog-api-key")).toBe(API_KEY);
     expect(String(fetchImpl.mock.calls[1]?.[0])).not.toContain(API_KEY);
+  });
+
+  it("deve pedir o vídeo em segundo plano para a conexão não esperar o vídeo ficar pronto", async () => {
+    const fetchImpl = fakeFetch([json(finished())]);
+
+    await generatorWith(fetchImpl).generate(REQUEST);
+
+    expect(sentBody(fetchImpl).background).toBe(true);
   });
 
   it("deve pedir vídeo só por texto quando o produto não tem foto", async () => {
