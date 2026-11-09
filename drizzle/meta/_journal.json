@@ -99,6 +99,13 @@
       "when": 1793829294759,
       "tag": "0013_video_ai_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1794155920921,
+      "tag": "0014_remove_sample_ads",
+      "breakpoints": true
     }
   ]
 }

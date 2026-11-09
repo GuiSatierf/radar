@@ -68,7 +68,7 @@ Na aba **Scheduled Tasks** do recurso, crie duas tarefas, as duas no container *
 | Coleta de produtos | `0 9 * * *` (6h em Brasília) | `wget -qO- --post-data="" --header="Authorization: Bearer $CRON_SECRET" http://127.0.0.1:3210/api/cron/collect-products` |
 | Coleta de anúncios | `30 9 * * *` (6h30 em Brasília) | `wget -qO- --post-data="" --header="Authorization: Bearer $CRON_SECRET" http://127.0.0.1:3210/api/cron/collect-ads` |
 
-Depois de criar, rode cada uma uma vez (**Execute Now**) para o Radar e os Anúncios já terem dados. A de produtos usa a API de afiliados da Shopee quando a chave está nas variáveis; a de anúncios ainda usa a fonte de exemplo.
+Depois de criar, rode cada uma uma vez (**Execute Now**) para o Radar já ter dados. A de produtos usa a API de afiliados da Shopee quando a chave está nas variáveis; a de anúncios não faz nada enquanto não houver uma fonte automática de verdade (os anúncios vêm só do admin).
 
 O Studio tem mais uma tarefa, a cada minuto. O vídeo já começa logo depois do clique; a tarefa pega o que um deploy interrompeu e tira da biblioteca os vídeos com mais de 15 dias:
 

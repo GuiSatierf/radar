@@ -99,6 +99,7 @@ Uma linha por decisão: data, o que foi decidido, por quê, o que foi descartado
   - o admin esconde anúncio automático (`is_hidden`) em vez de apagar, porque a próxima coleta o traria de volta.
 
   Descartados: apagar o que sumiu da fonte (perde o histórico de dias no ar) e deixar a coleta sobrescrever a curadoria.
+- **08/11/2026 · A fonte de exemplo nunca roda na coleta agendada:** a coleta diária usava a fonte de exemplo, e anúncios inventados apareciam para quem usa o app. Agora a coleta agendada só roda com uma fonte de verdade (`selectAdSource`, hoje nenhuma) e a migração 0014 apaga os anúncios de exemplo que já estavam gravados. Os anúncios do admin ficam. A fonte de exemplo continua no desenvolvimento, no seed e nos testes (`npm run collect:ads`). Descartado: esconder os anúncios de exemplo só na tela, que deixaria dado inventado no banco de produção.
 
 ## Studio
 

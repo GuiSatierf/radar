@@ -31,6 +31,8 @@ const COLLECTION_TEXT: Readonly<
       title: string;
       items: string;
       whenFailed: string;
+      /** Shown before any run; the ad collection has no real source yet, so it may never run. */
+      whenNone: string;
       /** Source names with their article ("do catálogo…"), as the sentence needs. */
       sources: Readonly<Record<string, string>>;
     }
@@ -40,6 +42,7 @@ const COLLECTION_TEXT: Readonly<
     title: "Última coleta de produtos",
     items: "produtos",
     whenFailed: "Falhou, e o Radar continua com os produtos anteriores.",
+    whenNone: "Aparece aqui depois da primeira coleta.",
     sources: {
       fake: "do catálogo de exemplo",
       "shopee-affiliate": "da API de afiliados da Shopee",
@@ -49,6 +52,8 @@ const COLLECTION_TEXT: Readonly<
     title: "Última coleta automática de anúncios",
     items: "anúncios",
     whenFailed: "Falhou, e a lista de anúncios continua como estava.",
+    whenNone:
+      "Ainda não há fonte automática de anúncios. Os anúncios vêm só do que é cadastrado aqui no admin.",
     sources: { fake: "da fonte de exemplo" },
   },
 };
@@ -68,9 +73,7 @@ export function CollectionCard(props: {
         value="Nenhuma ainda"
         className={props.className}
       >
-        <p className="text-sm text-muted-foreground">
-          Aparece aqui depois da primeira coleta.
-        </p>
+        <p className="text-sm text-muted-foreground">{text.whenNone}</p>
       </StatCard>
     );
   }
