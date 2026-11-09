@@ -31,6 +31,8 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder /app/drizzle ./drizzle
+# Studio videos (VIDEO_FILES_DIR). A new Docker volume copies this folder, owner included.
+RUN mkdir -p /app/data/videos && chown -R nextjs:nodejs /app/data
 USER nextjs
 EXPOSE 3210
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \

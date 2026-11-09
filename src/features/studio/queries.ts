@@ -109,6 +109,37 @@ export async function getStudioLibrary(input: {
   };
 }
 
+export interface DownloadableVideo {
+  readonly id: string;
+  readonly productName: string;
+}
+
+/**
+ * A ready, unexpired video of this person, for the download route; null for anyone else's video,
+ * so a stranger cannot tell whether an id exists.
+ */
+export async function findDownloadableVideo(input: {
+  db: Database;
+  videoId: string;
+  userId: string;
+  now: Date;
+}): Promise<DownloadableVideo | null> {
+  const [row] = await input.db
+    .select({ id: studioVideo.id, productName: studioVideo.productName })
+    .from(studioVideo)
+    .where(
+      and(
+        eq(studioVideo.id, input.videoId),
+        eq(studioVideo.userId, input.userId),
+        eq(studioVideo.status, "ready"),
+        gt(studioVideo.expiresAt, input.now),
+      ),
+    )
+    .limit(1);
+
+  return row ?? null;
+}
+
 export interface StudioProduct {
   readonly id: string;
   readonly name: string;

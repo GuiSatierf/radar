@@ -2,7 +2,11 @@ import { randomUUID } from "node:crypto";
 import { and, count, eq, gte, inArray, lt, lte, ne, sql } from "drizzle-orm";
 import type { Database } from "@/db/client";
 import { product, studioVideo } from "@/db/schema";
-import type { VideoGenerator } from "@/sources/video/video-generator";
+import { logger } from "@/lib/logger";
+import type {
+  GeneratedVideo,
+  VideoGenerator,
+} from "@/sources/video/video-generator";
 import { isVideoFormat, type VideoFormat } from "./domain/formats";
 import {
   calculateVideoQuota,
@@ -10,6 +14,11 @@ import {
   type VideoLimit,
   type VideoLimitPeriod,
 } from "./domain/quota";
+import {
+  removeVideoFiles,
+  saveVideoFile,
+  videoDownloadUrl,
+} from "./video-files";
 
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -187,9 +196,23 @@ function describeError(error: unknown): string {
   return text.replace(/\s+/g, " ").slice(0, MAX_ERROR_MESSAGE_LENGTH);
 }
 
+/** Where the library links to: the sample's own address, or our download route for a stored file. */
+async function storeResult(
+  videoFilesDir: string,
+  videoId: string,
+  result: GeneratedVideo,
+): Promise<string> {
+  if (result.kind === "link") return result.videoUrl;
+
+  await saveVideoFile(videoFilesDir, videoId, result.bytes);
+
+  return videoDownloadUrl(videoId);
+}
+
 async function generateOne(input: {
   db: Database;
   generator: VideoGenerator;
+  videoFilesDir: string;
   clock: () => Date;
   video: Awaited<ReturnType<typeof claimQueuedVideos>>[number];
 }): Promise<"ready" | "failed"> {
@@ -210,29 +233,41 @@ async function generateOne(input: {
       productImageUrl: video.productImageUrl,
       format: video.format,
     });
+    const videoUrl = await storeResult(input.videoFilesDir, video.id, result);
     const finishedAt = input.clock();
 
-    await db
+    const updated = await db
       .update(studioVideo)
       .set({
         status: "ready",
-        videoUrl: result.videoUrl,
+        videoUrl,
         finishedAt,
         expiresAt: new Date(
           finishedAt.getTime() + VIDEO_KEEP_DAYS * MILLISECONDS_PER_DAY,
         ),
       })
-      .where(stillGenerating);
+      .where(stillGenerating)
+      .returning({ id: studioVideo.id });
 
-    return "ready";
+    if (updated.length > 0) return "ready";
+
+    // The stuck check failed it meanwhile, so nobody will ever download this file.
+    await removeVideoFiles(input.videoFilesDir, [video.id]);
+
+    return "failed";
   } catch (error) {
     const finishedAt = input.clock();
+    const errorMessage = describeError(error);
+    logger.warn(
+      { videoId: video.id, generator: input.generator.name, errorMessage },
+      "video generation failed",
+    );
 
     await db
       .update(studioVideo)
       .set({
         status: "failed",
-        errorMessage: describeError(error),
+        errorMessage,
         finishedAt,
         expiresAt: new Date(finishedAt.getTime() + FAILED_VIDEO_KEEP_IN_MS),
       })
@@ -255,6 +290,8 @@ export interface QueueRunSummary {
 export async function processVideoQueue(input: {
   db: Database;
   generator: VideoGenerator;
+  /** The folder where generated MP4 files are kept. */
+  videoFilesDir: string;
   clock?: () => Date;
 }): Promise<QueueRunSummary> {
   const clock = input.clock ?? (() => new Date());
@@ -262,7 +299,13 @@ export async function processVideoQueue(input: {
   const claimed = await claimQueuedVideos(input.db, clock());
   const outcomes = await Promise.all(
     claimed.map((video) =>
-      generateOne({ db: input.db, generator: input.generator, clock, video }),
+      generateOne({
+        db: input.db,
+        generator: input.generator,
+        videoFilesDir: input.videoFilesDir,
+        clock,
+        video,
+      }),
     ),
   );
 
@@ -275,12 +318,13 @@ export async function processVideoQueue(input: {
 
 /**
  * Takes expired videos out of the library. Ready videos keep their row, because they still count
- * toward the limit; only the link goes. Failed videos never counted, so their row goes too:
- * turning them into "expired" would start charging them.
+ * toward the limit; only the link and the stored file go. Failed videos never counted, so their
+ * row goes too: turning them into "expired" would start charging them.
  */
 export async function expireOldVideos(
   db: Database,
   now: Date,
+  videoFilesDir: string,
 ): Promise<number> {
   const [expired, removed] = await Promise.all([
     db
@@ -297,6 +341,19 @@ export async function expireOldVideos(
       )
       .returning({ id: studioVideo.id }),
   ]);
+
+  try {
+    await removeVideoFiles(
+      videoFilesDir,
+      expired.map((video) => video.id),
+    );
+  } catch (error) {
+    // A file left on disk must not stop the queue, which runs right after this in the same pass.
+    logger.error(
+      { err: error, videoIds: expired.map((video) => video.id) },
+      "expired video files could not be deleted",
+    );
+  }
 
   return expired.length + removed.length;
 }

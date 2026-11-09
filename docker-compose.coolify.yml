@@ -14,6 +14,8 @@ services:
       BETTER_AUTH_SECRET: ${SERVICE_BASE64_64_AUTH}
       CRON_SECRET: ${SERVICE_PASSWORD_64_CRON}
       VIDEO_KEYS_SECRET: ${SERVICE_BASE64_64_VIDEOKEYS}
+      # Studio videos live in their own volume, so a deploy does not erase them.
+      VIDEO_FILES_DIR: /app/data/videos
       DATABASE_URL: postgres://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_POSTGRES}@postgres:5432/${POSTGRES_DB:-prisciane}
       APP_NAME: ${APP_NAME:-Prisciane}
       # Traefik overwrites x-real-ip. Switch to cf-connecting-ip only when Cloudflare's proxy is on.
@@ -28,6 +30,8 @@ services:
       # Real e-mail (Resend), off while empty; set both or neither. docs/COOLIFY.md, step 4.
       RESEND_API_KEY: ${RESEND_API_KEY}
       EMAIL_FROM: ${EMAIL_FROM}
+    volumes:
+      - prisciane-videos:/app/data/videos
     depends_on:
       postgres:
         condition: service_healthy
@@ -54,3 +58,4 @@ services:
 
 volumes:
   prisciane-postgres:
+  prisciane-videos:

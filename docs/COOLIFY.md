@@ -70,7 +70,9 @@ Na aba **Scheduled Tasks** do recurso, crie duas tarefas, as duas no container *
 
 Depois de criar, rode cada uma uma vez (**Execute Now**) para o Radar já ter dados. A de produtos usa a API de afiliados da Shopee quando a chave está nas variáveis; a de anúncios não faz nada enquanto não houver uma fonte automática de verdade (os anúncios vêm só do admin).
 
-O Studio tem mais uma tarefa, a cada minuto. O vídeo já começa logo depois do clique; a tarefa pega o que um deploy interrompeu e tira da biblioteca os vídeos com mais de 15 dias:
+Os vídeos que a IA faz ficam no volume `prisciane-videos`, que o próprio deploy cria (está no `docker-compose.coolify.yml`); não precisa configurar nada. Eles passam de um deploy para o outro e saem sozinhos depois de 15 dias.
+
+O Studio tem mais uma tarefa, a cada minuto. O vídeo já começa logo depois do clique; a tarefa pega o que um deploy interrompeu e tira da biblioteca, e do volume, os vídeos com mais de 15 dias:
 
 | Nome | Frequência | Comando |
 |---|---|---|

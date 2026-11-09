@@ -34,6 +34,9 @@ yarn-error.log*
 .env*
 !.env.example
 
+# Studio videos made locally (VIDEO_FILES_DIR)
+/data/
+
 # local e-mail outbox (EMAIL_OUTBOX_DIR)
 /.outbox/
 /.outbox-e2e/

@@ -50,7 +50,7 @@ describe("limite de vídeos", () => {
 describe("escolha da IA", () => {
   it("não deve aceitar uma opção com partes a mais", async () => {
     const result = await chooseVideoAi({
-      choice: "google:gemini-omni-1.1-flash:extra",
+      choice: "google:gemini-omni-1.2-flash:extra",
     });
 
     expect(result.ok).toBe(false);
@@ -59,13 +59,13 @@ describe("escolha da IA", () => {
 
   it("deve escolher o modelo da opção da lista", async () => {
     const result = await chooseVideoAi({
-      choice: "google:gemini-omni-1.1-flash",
+      choice: "google:gemini-omni-1.2-flash",
     });
 
     expect(result).toEqual({ ok: true });
     expect(chooseVideoModelMock).toHaveBeenCalledWith(
       expect.anything(),
-      { provider: "google", model: "gemini-omni-1.1-flash" },
+      { provider: "google", model: "gemini-omni-1.2-flash" },
       expect.any(Date),
     );
   });

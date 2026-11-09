@@ -1,5 +1,8 @@
+import { mkdir, mkdtemp, rm } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import { eq, sql } from "drizzle-orm";
-import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createDatabase } from "@/db/client";
 import { product, studioVideo, user } from "@/db/schema";
 import { collectProducts } from "@/sources/products/collect-products";
@@ -17,6 +20,11 @@ import {
   expireOldVideos,
   processVideoQueue,
 } from "./queue";
+import {
+  readVideoFileSize,
+  videoDownloadUrl,
+  videoFilePath,
+} from "./video-files";
 
 const { db, pool } = createDatabase(process.env.TEST_DATABASE_URL ?? "");
 
@@ -25,6 +33,7 @@ const USER_ID = "user-studio";
 const instantGenerator = createFakeVideoGenerator({ generationTimeInMs: 0 });
 const ONE_PER_MONTH: VideoLimit = { count: 1, period: "month" };
 let productId = "";
+let videoFilesDir = "";
 
 function enqueue(overrides: { limit?: VideoLimit; now?: Date } = {}) {
   return enqueueVideo({
@@ -55,8 +64,13 @@ beforeEach(async () => {
   productId = first?.id ?? "";
 });
 
+beforeAll(async () => {
+  videoFilesDir = await mkdtemp(path.join(os.tmpdir(), "studio-queue-"));
+});
+
 afterAll(async () => {
   await pool.end();
+  await rm(videoFilesDir, { recursive: true, force: true });
 });
 
 describe("enqueueVideo", () => {
@@ -98,6 +112,7 @@ describe("enqueueVideo", () => {
     await enqueue({ limit: ONE_PER_MONTH });
     await processVideoQueue({
       db,
+      videoFilesDir,
       generator: instantGenerator,
       clock: () => NOW,
     });
@@ -111,6 +126,7 @@ describe("enqueueVideo", () => {
     await enqueue({ limit: ONE_PER_MONTH });
     await processVideoQueue({
       db,
+      videoFilesDir,
       generator: instantGenerator,
       clock: () => NOW,
     });
@@ -128,6 +144,7 @@ describe("enqueueVideo", () => {
     await enqueue({ limit: onePerDay });
     await processVideoQueue({
       db,
+      videoFilesDir,
       generator: instantGenerator,
       clock: () => NOW,
     });
@@ -152,6 +169,7 @@ describe("processVideoQueue", () => {
 
     const summary = await processVideoQueue({
       db,
+      videoFilesDir,
       generator: instantGenerator,
       clock: () => NOW,
     });
@@ -174,6 +192,7 @@ describe("processVideoQueue", () => {
 
     const summary = await processVideoQueue({
       db,
+      videoFilesDir,
       generator: brokenGenerator,
       clock: () => NOW,
     });
@@ -193,14 +212,14 @@ describe("processVideoQueue", () => {
       generate: async () => {
         calls += 1;
 
-        return { videoUrl: SAMPLE_VIDEO_URL };
+        return { kind: "link", videoUrl: SAMPLE_VIDEO_URL };
       },
     };
     await enqueue();
 
     await Promise.all([
-      processVideoQueue({ db, generator: countingGenerator }),
-      processVideoQueue({ db, generator: countingGenerator }),
+      processVideoQueue({ db, generator: countingGenerator, videoFilesDir }),
+      processVideoQueue({ db, generator: countingGenerator, videoFilesDir }),
     ]);
 
     expect(calls).toBe(1);
@@ -218,6 +237,7 @@ describe("processVideoQueue", () => {
 
     const summary = await processVideoQueue({
       db,
+      videoFilesDir,
       generator: instantGenerator,
       clock: () => NOW,
     });
@@ -228,17 +248,85 @@ describe("processVideoQueue", () => {
   });
 });
 
+describe("vídeo feito por uma IA de verdade", () => {
+  const VIDEO_BYTES = new Uint8Array([0, 0, 0, 32, 102, 116, 121, 112]);
+  const fileGenerator: VideoGenerator = {
+    name: "file",
+    generate: async () => ({ kind: "file", bytes: VIDEO_BYTES }),
+  };
+
+  it("deve guardar o arquivo e ligar o vídeo ao endereço de download", async () => {
+    const queued = await enqueue();
+    const videoId = queued.ok ? queued.videoId : "";
+
+    const summary = await processVideoQueue({
+      db,
+      videoFilesDir,
+      generator: fileGenerator,
+      clock: () => NOW,
+    });
+
+    expect(summary.ready).toBe(1);
+    const [video] = await storedVideos();
+    expect(video?.videoUrl).toBe(videoDownloadUrl(videoId));
+    expect(await readVideoFileSize(videoFilesDir, videoId)).toBe(
+      VIDEO_BYTES.byteLength,
+    );
+  });
+
+  it("deve apagar o arquivo quando o vídeo sai da biblioteca depois de 15 dias", async () => {
+    const queued = await enqueue();
+    const videoId = queued.ok ? queued.videoId : "";
+    await processVideoQueue({
+      db,
+      videoFilesDir,
+      generator: fileGenerator,
+      clock: () => NOW,
+    });
+
+    await expireOldVideos(db, new Date("2026-11-14T15:00:01Z"), videoFilesDir);
+
+    expect(await readVideoFileSize(videoFilesDir, videoId)).toBeNull();
+  });
+
+  it("deve tirar o vídeo da biblioteca mesmo quando o arquivo não pode ser apagado", async () => {
+    const queued = await enqueue();
+    const videoId = queued.ok ? queued.videoId : "";
+    await processVideoQueue({
+      db,
+      videoFilesDir,
+      generator: fileGenerator,
+      clock: () => NOW,
+    });
+    // A folder in the file's place makes the delete fail, like a permission error would.
+    const filePath = videoFilePath(videoFilesDir, videoId);
+    await rm(filePath);
+    await mkdir(filePath);
+
+    const expired = await expireOldVideos(
+      db,
+      new Date("2026-11-14T15:00:01Z"),
+      videoFilesDir,
+    );
+
+    expect(expired).toBe(1);
+    expect((await storedVideos())[0]?.status).toBe("expired");
+    await rm(filePath, { recursive: true });
+  });
+});
+
 describe("expireOldVideos e a biblioteca", () => {
   it("deve tirar da biblioteca depois de 15 dias, mas continuar contando no mês", async () => {
     await enqueue();
     await processVideoQueue({
       db,
+      videoFilesDir,
       generator: instantGenerator,
       clock: () => NOW,
     });
     const later = new Date("2026-11-14T15:00:01Z");
 
-    const expired = await expireOldVideos(db, later);
+    const expired = await expireOldVideos(db, later, videoFilesDir);
 
     expect(expired).toBe(1);
     const [video] = await storedVideos();
@@ -263,12 +351,13 @@ describe("expireOldVideos e a biblioteca", () => {
     await enqueue();
     await processVideoQueue({
       db,
+      videoFilesDir,
       generator: brokenGenerator,
       clock: () => NOW,
     });
     const nextDay = new Date("2026-10-31T15:00:01Z");
 
-    await expireOldVideos(db, nextDay);
+    await expireOldVideos(db, nextDay, videoFilesDir);
 
     expect(await countVideosInPeriod(db, USER_ID, "month", nextDay)).toBe(0);
     const library = await getStudioLibrary({
@@ -284,6 +373,7 @@ describe("expireOldVideos e a biblioteca", () => {
     await enqueue();
     await processVideoQueue({
       db,
+      videoFilesDir,
       generator: instantGenerator,
       clock: () => NOW,
     });
