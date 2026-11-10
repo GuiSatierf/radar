@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import type { ProductSnapshot, ProductSource } from "../product-source";
 import { SHOPEE_CATEGORIES, type ShopeeCategory } from "./categories";
 import type { ShopeeAffiliateClient } from "./client";
@@ -47,8 +48,9 @@ export function offerToSnapshot(
 
 /**
  * The best sellers of each category. Categories run one after another to stay well under the
- * API's rate limit, and any failure stops the whole collection: a partial catalog would remove
- * the categories that failed.
+ * API's rate limit. A category that still fails after the client's retries is skipped, and the
+ * collector keeps its products, because the API fails at random calls and one of them must not
+ * hold back the whole catalog. When every category fails, the first error is thrown.
  */
 export function createShopeeProductSource(input: {
   client: Pick<ShopeeAffiliateClient, "fetchOffers">;
@@ -60,18 +62,34 @@ export function createShopeeProductSource(input: {
 
   async function fetchProducts(): Promise<ProductSnapshot[]> {
     const byId = new Map<string, ProductSnapshot>();
+    const failures: unknown[] = [];
 
     for (const category of categories) {
-      const { offers } = await input.client.fetchOffers({
-        categoryId: category.id,
-        sort: "mostSold",
-        maxPages: pagesPerCategory,
-      });
+      let offers: ShopeeOffer[];
+
+      try {
+        ({ offers } = await input.client.fetchOffers({
+          categoryId: category.id,
+          sort: "mostSold",
+          maxPages: pagesPerCategory,
+        }));
+      } catch (error) {
+        failures.push(error);
+        logger.warn(
+          { err: error, category: category.slug },
+          "shopee category failed; its products are kept",
+        );
+        continue;
+      }
 
       for (const offer of offers) {
         const snapshot = offerToSnapshot(offer, category);
         byId.set(snapshot.id, byId.get(snapshot.id) ?? snapshot);
       }
+    }
+
+    if (categories.length > 0 && failures.length === categories.length) {
+      throw failures[0];
     }
 
     return [...byId.values()];

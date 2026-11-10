@@ -48,18 +48,26 @@ describe("coleta", () => {
   });
 
   it("deve pular item inválido sem perder os válidos", async () => {
-    const valid = await createFakeProductSource().fetchProducts();
+    const valid = (await createFakeProductSource().fetchProducts()) as {
+      categorySlug: string;
+    }[];
+    const kept = valid.slice(0, 30);
+    const keptCategories = new Set(kept.map((item) => item.categorySlug));
+    const leaving = valid
+      .slice(30)
+      .filter((item) => keptCategories.has(item.categorySlug)).length;
     const source = {
       name: "test",
-      fetchProducts: async () => [...valid.slice(0, 30), { id: "QUEBRADO" }],
+      fetchProducts: async () => [...kept, { id: "QUEBRADO" }],
     };
 
     const result = await collectProducts({ db, source, now: NOW });
 
+    expect(leaving).toBeGreaterThan(0);
     expect(result).toEqual({
       saved: 30,
       skipped: 1,
-      removed: 10,
+      removed: leaving,
       removalSkipped: false,
     });
   });
@@ -76,6 +84,33 @@ describe("coleta", () => {
     expect(result.removed).toBe(0);
     expect(result.removalSkipped).toBe(true);
     expect((await list({})).total).toBe(40);
+  });
+
+  it("deve manter os produtos de uma categoria que não veio, apagando só os que saíram das outras", async () => {
+    const valid = (await createFakeProductSource().fetchProducts()) as {
+      id: string;
+      categorySlug: string;
+    }[];
+    const failedCategory = valid[0]?.categorySlug;
+    const others = valid.filter(
+      (snapshot) => snapshot.categorySlug !== failedCategory,
+    );
+    const leaving = others.at(-1);
+    const source = {
+      name: "test",
+      fetchProducts: async () => others.slice(0, -1),
+    };
+
+    const result = await collectProducts({ db, source, now: NOW });
+
+    const ids = (await list({})).items.map((item) => item.id);
+    expect(result.removed).toBe(1);
+    expect(ids).not.toContain(leaving?.id);
+    expect(
+      valid
+        .filter((snapshot) => snapshot.categorySlug === failedCategory)
+        .every((snapshot) => ids.includes(snapshot.id)),
+    ).toBe(true);
   });
 
   it("não deve apagar nada quando a fonte volta vazia", async () => {

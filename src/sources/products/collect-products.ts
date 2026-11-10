@@ -1,4 +1,5 @@
 import {
+  and,
   count,
   getTableColumns,
   inArray,
@@ -156,8 +157,10 @@ async function replaceVideos(
 
 /**
  * Replaces the catalog with what the source has now, in one transaction. Products the source no
- * longer returns are removed, unless the response is much smaller than the current catalog (a
- * partial fetch must never wipe the Radar). An empty or fully invalid response changes nothing.
+ * longer returns are removed, but only in the categories the response brought (a category that
+ * failed at the source keeps yesterday's products), and not at all when the response is much
+ * smaller than the current catalog (a partial fetch must never wipe the Radar). An empty or fully
+ * invalid response changes nothing.
  */
 export async function collectProducts(input: {
   db: Database;
@@ -184,9 +187,14 @@ export async function collectProducts(input: {
       : await tx
           .delete(product)
           .where(
-            notInArray(
-              product.id,
-              snapshots.map((snapshot) => snapshot.id),
+            and(
+              notInArray(
+                product.id,
+                snapshots.map((snapshot) => snapshot.id),
+              ),
+              inArray(product.categorySlug, [
+                ...new Set(snapshots.map((snapshot) => snapshot.categorySlug)),
+              ]),
             ),
           )
           .returning({ id: product.id });
