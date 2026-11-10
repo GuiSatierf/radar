@@ -95,15 +95,24 @@ describe("coleta", () => {
     const others = valid.filter(
       (snapshot) => snapshot.categorySlug !== failedCategory,
     );
-    const leaving = others.at(-1);
+    // A product whose category still comes back through another product.
+    const leaving = others.find((candidate) =>
+      others.some(
+        (other) =>
+          other.id !== candidate.id &&
+          other.categorySlug === candidate.categorySlug,
+      ),
+    );
     const source = {
       name: "test",
-      fetchProducts: async () => others.slice(0, -1),
+      fetchProducts: async () =>
+        others.filter((snapshot) => snapshot.id !== leaving?.id),
     };
 
     const result = await collectProducts({ db, source, now: NOW });
 
     const ids = (await list({})).items.map((item) => item.id);
+    expect(leaving).toBeDefined();
     expect(result.removed).toBe(1);
     expect(ids).not.toContain(leaving?.id);
     expect(

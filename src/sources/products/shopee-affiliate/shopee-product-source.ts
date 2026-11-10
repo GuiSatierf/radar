@@ -9,6 +9,9 @@ export const SHOPEE_PRODUCT_SOURCE_NAME = "shopee-affiliate";
 /** 2 pages of 50 per category: about 2,800 products in about 56 calls. */
 export const DEFAULT_PAGES_PER_CATEGORY = 2;
 
+// The scheduled task in Coolify stops after 300 s; this leaves a minute to save the catalog.
+const DEFAULT_BUDGET_IN_MS = 240_000;
+
 // Our limits (product-source.ts); a long Shopee title is cut instead of losing the product.
 const MAX_NAME_LENGTH = 200;
 const MAX_SHOP_NAME_LENGTH = 100;
@@ -50,37 +53,56 @@ export function offerToSnapshot(
  * The best sellers of each category. Categories run one after another to stay well under the
  * API's rate limit. A category that still fails after the client's retries is skipped, and the
  * collector keeps its products, because the API fails at random calls and one of them must not
- * hold back the whole catalog. When every category fails, the first error is thrown.
+ * hold back the whole catalog. Categories left when the time budget runs out are skipped the same
+ * way, so the retries never push the run past the scheduled task's timeout. When nothing came
+ * back and some category failed, the first error is thrown.
  */
 export function createShopeeProductSource(input: {
   client: Pick<ShopeeAffiliateClient, "fetchOffers">;
   pagesPerCategory?: number;
   categories?: readonly ShopeeCategory[];
+  budgetInMs?: number;
+  clockInMs?: () => number;
 }): ProductSource {
   const pagesPerCategory = input.pagesPerCategory ?? DEFAULT_PAGES_PER_CATEGORY;
   const categories = input.categories ?? SHOPEE_CATEGORIES;
+  const budgetInMs = input.budgetInMs ?? DEFAULT_BUDGET_IN_MS;
+  const clockInMs = input.clockInMs ?? Date.now;
+
+  async function fetchCategory(
+    category: ShopeeCategory,
+  ): Promise<ShopeeOffer[]> {
+    const { offers } = await input.client.fetchOffers({
+      categoryId: category.id,
+      sort: "mostSold",
+      maxPages: pagesPerCategory,
+    });
+
+    return offers;
+  }
 
   async function fetchProducts(): Promise<ProductSnapshot[]> {
     const byId = new Map<string, ProductSnapshot>();
     const failures: unknown[] = [];
+    const startedAt = clockInMs();
 
-    for (const category of categories) {
-      let offers: ShopeeOffer[];
+    for (const [index, category] of categories.entries()) {
+      if (clockInMs() - startedAt >= budgetInMs) {
+        logger.warn(
+          { skippedCategories: categories.length - index },
+          "shopee collection ran out of time; the rest keep their products",
+        );
+        break;
+      }
 
-      try {
-        ({ offers } = await input.client.fetchOffers({
-          categoryId: category.id,
-          sort: "mostSold",
-          maxPages: pagesPerCategory,
-        }));
-      } catch (error) {
+      const offers = await fetchCategory(category).catch((error: unknown) => {
         failures.push(error);
         logger.warn(
           { err: error, category: category.slug },
           "shopee category failed; its products are kept",
         );
-        continue;
-      }
+        return [];
+      });
 
       for (const offer of offers) {
         const snapshot = offerToSnapshot(offer, category);
@@ -88,9 +110,7 @@ export function createShopeeProductSource(input: {
       }
     }
 
-    if (categories.length > 0 && failures.length === categories.length) {
-      throw failures[0];
-    }
+    if (byId.size === 0 && failures.length > 0) throw failures[0];
 
     return [...byId.values()];
   }

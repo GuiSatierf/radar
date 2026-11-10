@@ -139,6 +139,25 @@ describe("createShopeeProductSource", () => {
     expect(products.map((product) => product.id)).toEqual(["shopee-2"]);
   });
 
+  it("deve parar de buscar quando o tempo acaba, guardando o que já veio", async () => {
+    const client = fakeClient({
+      [HOME.id]: [offer({ itemId: "1" })],
+      [BEAUTY.id]: [offer({ itemId: "2" })],
+    });
+    const times = [0, 0, 240_000];
+    const source = createShopeeProductSource({
+      client,
+      categories: [HOME, BEAUTY],
+      budgetInMs: 240_000,
+      clockInMs: () => times.shift() ?? 240_000,
+    });
+
+    const products = (await source.fetchProducts()) as { id: string }[];
+
+    expect(products.map((product) => product.id)).toEqual(["shopee-1"]);
+    expect(client.fetchOffers).toHaveBeenCalledTimes(1);
+  });
+
   it("deve falhar com o erro da Shopee quando todas as categorias falham", async () => {
     const client = fakeClient({});
     client.fetchOffers.mockRejectedValue(new Error("chave recusada"));
