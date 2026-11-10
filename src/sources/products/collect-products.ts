@@ -4,6 +4,7 @@ import {
   getTableColumns,
   inArray,
   lt,
+  max,
   notInArray,
   or,
   type SQL,
@@ -159,6 +160,19 @@ async function replaceVideos(
   }
 }
 
+async function lastCollectedAtByCategory(
+  db: Database,
+): Promise<Map<string, Date>> {
+  const rows = await db
+    .select({ slug: product.categorySlug, lastAt: max(product.collectedAt) })
+    .from(product)
+    .groupBy(product.categorySlug);
+
+  return new Map(
+    rows.flatMap((row) => (row.lastAt == null ? [] : [[row.slug, row.lastAt]])),
+  );
+}
+
 /**
  * Replaces the catalog with what the source has now, in one transaction. Products the source no
  * longer returns are removed, but only in the categories the response brought (a category that
@@ -171,7 +185,9 @@ export async function collectProducts(input: {
   source: ProductSource;
   now: Date;
 }): Promise<CollectionResult> {
-  const raw = await input.source.fetchProducts();
+  const raw = await input.source.fetchProducts({
+    lastCollectedAtByCategory: await lastCollectedAtByCategory(input.db),
+  });
   const snapshots = validSnapshots(raw);
 
   if (snapshots.length === 0) throw new EmptySourceError(input.source.name);

@@ -1,5 +1,9 @@
 import { logger } from "@/lib/logger";
-import type { ProductSnapshot, ProductSource } from "../product-source";
+import type {
+  FetchProductsInput,
+  ProductSnapshot,
+  ProductSource,
+} from "../product-source";
 import { SHOPEE_CATEGORIES, type ShopeeCategory } from "./categories";
 import type { ShopeeAffiliateClient } from "./client";
 import type { ShopeeOffer } from "./response";
@@ -49,6 +53,20 @@ export function offerToSnapshot(
   };
 }
 
+// The time budget rarely reaches every category while Shopee is slow, so the ones refreshed
+// longest ago (never collected first) go first and every category gets its turn.
+function oldestFirst(
+  categories: readonly ShopeeCategory[],
+  lastCollectedAtByCategory: ReadonlyMap<string, Date>,
+): ShopeeCategory[] {
+  const lastTime = (category: ShopeeCategory): number =>
+    lastCollectedAtByCategory.get(category.slug)?.getTime() ?? 0;
+
+  return categories.toSorted(
+    (first, second) => lastTime(first) - lastTime(second),
+  );
+}
+
 /**
  * The best sellers of each category. Categories run one after another to stay well under the
  * API's rate limit. A category that still fails after the client's retries is skipped, and the
@@ -81,12 +99,18 @@ export function createShopeeProductSource(input: {
     return offers;
   }
 
-  async function fetchProducts(): Promise<ProductSnapshot[]> {
+  async function fetchProducts(
+    fetchInput?: FetchProductsInput,
+  ): Promise<ProductSnapshot[]> {
     const byId = new Map<string, ProductSnapshot>();
     const failures: unknown[] = [];
     const startedAt = clockInMs();
+    const ordered = oldestFirst(
+      categories,
+      fetchInput?.lastCollectedAtByCategory ?? new Map(),
+    );
 
-    for (const [index, category] of categories.entries()) {
+    for (const [index, category] of ordered.entries()) {
       if (clockInMs() - startedAt >= budgetInMs) {
         logger.warn(
           { skippedCategories: categories.length - index },

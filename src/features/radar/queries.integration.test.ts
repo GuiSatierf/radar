@@ -141,6 +141,31 @@ describe("coleta", () => {
     expect(ids).not.toContain(valid[0]?.id);
   });
 
+  it("deve contar para a fonte quando cada categoria foi atualizada pela última vez", async () => {
+    const valid = (await createFakeProductSource().fetchProducts()) as {
+      categorySlug: string;
+    }[];
+    let received: ReadonlyMap<string, Date> | undefined;
+    const source = {
+      name: "test",
+      fetchProducts: async (fetchInput?: {
+        lastCollectedAtByCategory: ReadonlyMap<string, Date>;
+      }) => {
+        received = fetchInput?.lastCollectedAtByCategory;
+        return valid;
+      },
+    };
+
+    await collectProducts({
+      db,
+      source,
+      now: new Date(NOW.getTime() + 86_400_000),
+    });
+
+    const firstCategory = valid[0]?.categorySlug ?? "";
+    expect(received?.get(firstCategory)).toEqual(NOW);
+  });
+
   it("não deve apagar nada quando a fonte volta vazia", async () => {
     const source = { name: "test", fetchProducts: async () => [] };
 

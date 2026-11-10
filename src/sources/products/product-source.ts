@@ -43,8 +43,13 @@ export const productSnapshotSchema = z
 
 export type ProductSnapshot = z.infer<typeof productSnapshotSchema>;
 
+export interface FetchProductsInput {
+  /** When each category was last collected; a category missing here was never collected. */
+  readonly lastCollectedAtByCategory: ReadonlyMap<string, Date>;
+}
+
 export interface ProductSource {
   readonly name: string;
   /** Everything the source has now. Returned as unknown: the collector validates it. */
-  fetchProducts(): Promise<readonly unknown[]>;
+  fetchProducts(input?: FetchProductsInput): Promise<readonly unknown[]>;
 }

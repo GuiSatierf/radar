@@ -139,6 +139,26 @@ describe("createShopeeProductSource", () => {
     expect(products.map((product) => product.id)).toEqual(["shopee-2"]);
   });
 
+  it("deve buscar primeiro a categoria atualizada há mais tempo, e antes dela a que nunca veio", async () => {
+    const PET: ShopeeCategory = { id: 100631, slug: "pet", label: "Pet" };
+    const client = fakeClient({});
+    const source = createShopeeProductSource({
+      client,
+      categories: [HOME, BEAUTY, PET],
+    });
+
+    await source.fetchProducts({
+      lastCollectedAtByCategory: new Map([
+        [HOME.slug, new Date("2026-11-10T09:00:00Z")],
+        [BEAUTY.slug, new Date("2026-11-01T09:00:00Z")],
+      ]),
+    });
+
+    expect(
+      client.fetchOffers.mock.calls.map(([request]) => request.categoryId),
+    ).toEqual([PET.id, BEAUTY.id, HOME.id]);
+  });
+
   it("deve parar de buscar quando o tempo acaba, guardando o que já veio", async () => {
     const client = fakeClient({
       [HOME.id]: [offer({ itemId: "1" })],
