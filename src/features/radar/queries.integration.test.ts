@@ -122,6 +122,25 @@ describe("coleta", () => {
     ).toBe(true);
   });
 
+  it("deve apagar os produtos de uma categoria que não vem há mais de 7 dias", async () => {
+    const valid = (await createFakeProductSource().fetchProducts()) as {
+      id: string;
+      categorySlug: string;
+    }[];
+    const missingCategory = valid[0]?.categorySlug;
+    const source = {
+      name: "test",
+      fetchProducts: async () =>
+        valid.filter((snapshot) => snapshot.categorySlug !== missingCategory),
+    };
+    const eightDaysLater = new Date(NOW.getTime() + 8 * 86_400_000);
+
+    await collectProducts({ db, source, now: eightDaysLater });
+
+    const ids = (await list({})).items.map((item) => item.id);
+    expect(ids).not.toContain(valid[0]?.id);
+  });
+
   it("não deve apagar nada quando a fonte volta vazia", async () => {
     const source = { name: "test", fetchProducts: async () => [] };
 
