@@ -2,6 +2,7 @@ import {
   ShopeeInvalidResponseError,
   ShopeeRateLimitError,
   ShopeeRequestFailedError,
+  ShopeeSystemError,
 } from "./errors";
 import {
   buildOfferQuery,
@@ -17,7 +18,9 @@ export const SHOPEE_AFFILIATE_ENDPOINT =
   "https://open-api.affiliate.shopee.com.br/graphql";
 
 const DEFAULT_TIMEOUT_MS = 15_000;
-const DEFAULT_MAX_ATTEMPTS = 3;
+// A third of the calls failed with 10000 in a test on 10/11/2026: 5 attempts (up to 15 s of
+// waiting) leave about 0.4% of the calls failing, against 4% with 3.
+const DEFAULT_MAX_ATTEMPTS = 5;
 const FIRST_RETRY_DELAY_MS = 1_000;
 const MILLISECONDS_PER_SECOND = 1_000;
 
@@ -68,6 +71,7 @@ const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
 function isRetryable(error: unknown): boolean {
   return (
     error instanceof ShopeeRateLimitError ||
+    error instanceof ShopeeSystemError ||
     error instanceof RetryableHttpError ||
     error instanceof NetworkError
   );

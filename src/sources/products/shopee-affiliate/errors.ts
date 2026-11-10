@@ -1,4 +1,5 @@
 export const SHOPEE_RATE_LIMIT_CODE = "10030";
+export const SHOPEE_SYSTEM_ERROR_CODE = "10000";
 
 /** The API answered with an error in the GraphQL body (bad credentials, bad query, …). */
 export class ShopeeApiError extends Error {
@@ -16,6 +17,17 @@ export class ShopeeRateLimitError extends ShopeeApiError {
   constructor(message: string) {
     super(SHOPEE_RATE_LIMIT_CODE, message);
     this.name = "ShopeeRateLimitError";
+  }
+}
+
+/**
+ * Code 10000, "System Error". Since November 2026 Shopee returns it at random for a share of
+ * calls, and the same call usually works when repeated, so it is retried like a rate limit.
+ */
+export class ShopeeSystemError extends ShopeeApiError {
+  constructor(message: string) {
+    super(SHOPEE_SYSTEM_ERROR_CODE, message);
+    this.name = "ShopeeSystemError";
   }
 }
 

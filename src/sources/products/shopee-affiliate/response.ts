@@ -2,9 +2,11 @@ import { z } from "zod";
 import { fractionToBasisPoints, toCents, toTenths } from "./decimal";
 import {
   SHOPEE_RATE_LIMIT_CODE,
+  SHOPEE_SYSTEM_ERROR_CODE,
   ShopeeApiError,
   ShopeeInvalidResponseError,
   ShopeeRateLimitError,
+  ShopeeSystemError,
 } from "./errors";
 
 /** An offer from `productOfferV2`, already in our units (cents, basis points, tenths). */
@@ -141,6 +143,8 @@ function throwApiError(
   const message = first?.message ?? "no message";
 
   if (code === SHOPEE_RATE_LIMIT_CODE) throw new ShopeeRateLimitError(message);
+
+  if (code === SHOPEE_SYSTEM_ERROR_CODE) throw new ShopeeSystemError(message);
 
   throw new ShopeeApiError(code, message);
 }

@@ -1,9 +1,11 @@
 import {
+  and,
   count,
   getTableColumns,
   inArray,
   lt,
   notInArray,
+  or,
   type SQL,
   sql,
 } from "drizzle-orm";
@@ -45,6 +47,9 @@ const MIN_SHARE_TO_REMOVE = 0.5;
 const CHUNK_SIZE = 500;
 /** Enough history for "Em alta" (a week back) with room to spare. */
 const SALES_HISTORY_DAYS = 35;
+/** A product not refreshed for this long is removed even when its category did not come back. */
+const STALE_AFTER_DAYS = 7;
+const MILLISECONDS_PER_DAY = 86_400_000;
 
 /** The score uses the default 3% profile, so every user sees the same ranking. */
 function scoreOf(snapshot: ProductSnapshot): number {
@@ -156,8 +161,10 @@ async function replaceVideos(
 
 /**
  * Replaces the catalog with what the source has now, in one transaction. Products the source no
- * longer returns are removed, unless the response is much smaller than the current catalog (a
- * partial fetch must never wipe the Radar). An empty or fully invalid response changes nothing.
+ * longer returns are removed, but only in the categories the response brought (a category that
+ * failed at the source keeps yesterday's products, up to a week), and not at all when the response is much
+ * smaller than the current catalog (a partial fetch must never wipe the Radar). An empty or fully
+ * invalid response changes nothing.
  */
 export async function collectProducts(input: {
   db: Database;
@@ -184,9 +191,25 @@ export async function collectProducts(input: {
       : await tx
           .delete(product)
           .where(
-            notInArray(
-              product.id,
-              snapshots.map((snapshot) => snapshot.id),
+            and(
+              notInArray(
+                product.id,
+                snapshots.map((snapshot) => snapshot.id),
+              ),
+              or(
+                inArray(product.categorySlug, [
+                  ...new Set(
+                    snapshots.map((snapshot) => snapshot.categorySlug),
+                  ),
+                ]),
+                lt(
+                  product.collectedAt,
+                  new Date(
+                    input.now.getTime() -
+                      STALE_AFTER_DAYS * MILLISECONDS_PER_DAY,
+                  ),
+                ),
+              ),
             ),
           )
           .returning({ id: product.id });

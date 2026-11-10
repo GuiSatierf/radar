@@ -155,8 +155,10 @@ describe("retentativas", () => {
     expect(sleep).toHaveBeenCalledWith(1_000);
   });
 
-  it("deve desistir depois de 3 tentativas, com espera crescente", async () => {
-    const { client, sleep } = setup([
+  it("deve desistir depois de 5 tentativas, com espera crescente", async () => {
+    const { client, fetchMock, sleep } = setup([
+      apiError(10030, "rate limit"),
+      apiError(10030, "rate limit"),
       apiError(10030, "rate limit"),
       apiError(10030, "rate limit"),
       apiError(10030, "rate limit"),
@@ -165,8 +167,9 @@ describe("retentativas", () => {
     const request = client.fetchOfferPage({ page: 1, limit: 50 });
 
     await expect(request).rejects.toBeInstanceOf(ShopeeRequestFailedError);
+    expect(fetchMock).toHaveBeenCalledTimes(5);
     expect(sleep.mock.calls.map(([milliseconds]) => milliseconds)).toEqual([
-      1_000, 2_000,
+      1_000, 2_000, 4_000, 8_000,
     ]);
   });
 
@@ -265,6 +268,19 @@ describe("regressões da revisão", () => {
       client.fetchOffers({ maxPages: Number.NaN }),
     ).rejects.toBeInstanceOf(InvalidOfferRequestError);
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("deve tentar de novo o erro passageiro 10000 da Shopee em vez de desistir na primeira", async () => {
+    const { client, fetchMock } = setup([
+      apiError(10000, "error [10000]: System Error"),
+      apiError(10000, "error [10000]: System Error"),
+      page([offerNode()], false),
+    ]);
+
+    const result = await client.fetchOfferPage({ page: 1, limit: 50 });
+
+    expect(result.offers).toHaveLength(1);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 
   it("deve guardar a explicação da Shopee quando ela recusa a chamada", async () => {
