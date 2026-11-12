@@ -13,17 +13,13 @@ import {
 import type { Database } from "@/db/client";
 import { product, productSalesDay, productVideo } from "@/db/schema";
 import { todayInBrazil } from "@/features/ads/domain/ads";
-import {
-  DEFAULT_COMMISSION_PROFILE,
-  earningsPerSaleCents,
-} from "@/features/radar/domain/commission";
-import { calculateOpportunityScore } from "@/features/radar/domain/opportunity-score";
 import { daysBefore } from "@/lib/calendar-day";
 import {
   type ProductSnapshot,
   type ProductSource,
   productSnapshotSchema,
 } from "./product-source";
+import { scoreProduct } from "./product-score";
 
 export interface CollectionResult {
   readonly saved: number;
@@ -51,20 +47,6 @@ const SALES_HISTORY_DAYS = 35;
 /** A product not refreshed for this long is removed even when its category did not come back. */
 const STALE_AFTER_DAYS = 7;
 const MILLISECONDS_PER_DAY = 86_400_000;
-
-/** The score uses the default 3% profile, so every user sees the same ranking. */
-function scoreOf(snapshot: ProductSnapshot): number {
-  return calculateOpportunityScore({
-    affiliateCount: snapshot.affiliateCount,
-    affiliateCountIsMinimum: snapshot.affiliateCountIsMinimum,
-    monthlySales: snapshot.monthlySales,
-    earningsPerSaleCents: earningsPerSaleCents({
-      priceCents: snapshot.priceCents,
-      profile: DEFAULT_COMMISSION_PROFILE,
-      sellerRateBasisPoints: snapshot.sellerRateBasisPoints,
-    }),
-  });
-}
 
 function validSnapshots(raw: readonly unknown[]): ProductSnapshot[] {
   return raw.flatMap((item) => {
@@ -103,7 +85,11 @@ async function saveProducts(
   const rows = snapshots.map((snapshot) => {
     const { videos: _videos, ...fields } = snapshot;
 
-    return { ...fields, opportunityScore: scoreOf(snapshot), collectedAt: now };
+    return {
+      ...fields,
+      opportunityScore: scoreProduct(snapshot),
+      collectedAt: now,
+    };
   });
   const set = updateAllColumnsFromExcluded();
 
