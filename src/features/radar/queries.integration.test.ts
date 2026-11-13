@@ -266,11 +266,13 @@ describe("produtos sem contagem de afiliados", () => {
 
   it("deve dizer o que o catálogo tem, para a tela não oferecer filtro vazio", async () => {
     const counted = await createFakeProductSource().fetchProducts();
+    // New ids: a product already in the catalog keeps its saved count when the source has none.
     const source = {
       name: "test",
       fetchProducts: async () =>
         counted.map((item) => ({
           ...(item as Record<string, unknown>),
+          id: `${(item as { id: string }).id}-sem-contagem`,
           affiliateCount: null,
           hasFreeSample: false,
         })),
