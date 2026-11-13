@@ -3,6 +3,7 @@ import {
   count,
   getTableColumns,
   inArray,
+  isNotNull,
   lt,
   max,
   notInArray,
@@ -14,12 +15,12 @@ import type { Database } from "@/db/client";
 import { product, productSalesDay, productVideo } from "@/db/schema";
 import { todayInBrazil } from "@/features/ads/domain/ads";
 import { daysBefore } from "@/lib/calendar-day";
+import { scoreProduct } from "./product-score";
 import {
   type ProductSnapshot,
   type ProductSource,
   productSnapshotSchema,
 } from "./product-source";
-import { scoreProduct } from "./product-score";
 
 export interface CollectionResult {
   readonly saved: number;
@@ -99,6 +100,51 @@ async function saveProducts(
       .values(part)
       .onConflictDoUpdate({ target: product.id, set });
   }
+}
+
+/**
+ * A source that does not know the affiliate count (the Shopee API never does) keeps the count
+ * already saved, which comes from the admin's affiliate file. Without this, every collection
+ * would erase it.
+ */
+async function keepSavedAffiliateCounts(
+  tx: Transaction,
+  snapshots: readonly ProductSnapshot[],
+): Promise<ProductSnapshot[]> {
+  const withoutCount = snapshots
+    .filter((snapshot) => snapshot.affiliateCount == null)
+    .map((snapshot) => snapshot.id);
+  const saved = new Map<
+    string,
+    { affiliateCount: number; affiliateCountIsMinimum: boolean }
+  >();
+
+  for (const ids of chunk(withoutCount)) {
+    const rows = await tx
+      .select({
+        id: product.id,
+        affiliateCount: product.affiliateCount,
+        affiliateCountIsMinimum: product.affiliateCountIsMinimum,
+      })
+      .from(product)
+      .where(and(inArray(product.id, ids), isNotNull(product.affiliateCount)));
+
+    for (const row of rows) {
+      if (row.affiliateCount == null) continue;
+      saved.set(row.id, {
+        affiliateCount: row.affiliateCount,
+        affiliateCountIsMinimum: row.affiliateCountIsMinimum,
+      });
+    }
+  }
+
+  return snapshots.map((snapshot) => {
+    const known = saved.get(snapshot.id);
+
+    return snapshot.affiliateCount == null && known != null
+      ? { ...snapshot, ...known }
+      : snapshot;
+  });
 }
 
 /** Today's sales of every collected product; a second collection on the same day overwrites. */
@@ -184,7 +230,11 @@ export async function collectProducts(input: {
     const removalSkipped =
       snapshots.length < currentTotal * MIN_SHARE_TO_REMOVE;
 
-    await saveProducts(tx, snapshots, input.now);
+    await saveProducts(
+      tx,
+      await keepSavedAffiliateCounts(tx, snapshots),
+      input.now,
+    );
     await replaceVideos(tx, snapshots);
     await recordSalesDay(tx, snapshots, input.now);
 
