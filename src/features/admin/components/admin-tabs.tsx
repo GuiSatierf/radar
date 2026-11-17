@@ -8,6 +8,7 @@ const TABS = [
   { key: "hotmart", href: "/admin/hotmart", label: "Hotmart" },
   { key: "acessos", href: "/admin/acessos", label: "Acessos" },
   { key: "video", href: "/admin/video", label: "Vídeo com IA" },
+  { key: "afiliados", href: "/admin/afiliados", label: "Afiliados" },
 ] as const;
 
 export type AdminTab = (typeof TABS)[number]["key"];
